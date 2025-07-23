@@ -1,12 +1,12 @@
 import { FC, useState } from "react";
 import {
   StyleProp,
+  StyleSheet,
+  Text,
   TextInput,
   TextStyle,
-  ViewStyle,
-  Text,
   View,
-  StyleSheet,
+  ViewStyle,
 } from "react-native";
 import COLORS from "../constants/colors";
 import IconButton from "./buttons/IconButton";
@@ -34,7 +34,7 @@ const BaseTextInput: FC<Props> = (props) => {
     inputStyles,
   } = props;
 
-  const [isHidden, setIsHidden] = useState<boolean>(true);
+  const [isHidden, setIsHidden] = useState<boolean>(!!isSecure);
 
   return (
     <View style={containerStyles}>

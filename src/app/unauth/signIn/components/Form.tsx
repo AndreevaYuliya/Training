@@ -1,11 +1,11 @@
 import React, { FC, useCallback, useEffect, useState } from "react";
 import {
-  StyleSheet,
-  View,
-  Text,
   Alert,
-  TouchableWithoutFeedback,
   Keyboard,
+  StyleSheet,
+  Text,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
 
 import BaseTextInput from "@/src/components/BaseTextInput";
@@ -15,8 +15,8 @@ import TextButton from "@/src/components/buttons/TextButton";
 import COLORS from "@/src/constants/colors";
 import { router } from "expo-router";
 
-import * as LocalAuthentication from "expo-local-authentication";
 import { useLocalCredentials } from "@clerk/clerk-expo/local-credentials";
+import * as LocalAuthentication from "expo-local-authentication";
 
 import * as SecureStore from "expo-secure-store";
 
@@ -94,18 +94,12 @@ const Form: FC = () => {
     }
   };
 
-  const handleBiometricLogin = async () => {
-    const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: "Login with biometrics",
-    });
-
-    if (!result.success) {
-      Alert.alert("Biometric auth failed");
-      return;
-    }
+ const handleBiometricLogin = async () => {
+  // 🔧 Dev-mode fallback to skip actual biometric prompt
+  if (__DEV__) {
+    console.warn("DEV MODE: Skipping biometric prompt");
 
     const storedCreds = await SecureStore.getItemAsync("credentials");
-
     if (!storedCreds) {
       Alert.alert("No saved credentials found");
       return;
@@ -115,25 +109,72 @@ const Form: FC = () => {
 
     try {
       if (!signIn) {
-        Alert.alert("SignIn is not available");
-        return;
-      }
-      const signInAttempt = await signIn.create({
-        identifier: email,
-        password,
-      });
+  Alert.alert("Sign-in is not available");
+  return;
+}
+      const signInAttempt = await signIn.create({ identifier: email, password });
 
       if (signInAttempt.status === "complete") {
         await setActive({ session: signInAttempt.createdSessionId });
-        router.replace("/auth");
+        router.replace("/"); // ✅ Redirect to home
       } else {
         Alert.alert("Additional verification required.");
       }
     } catch (err) {
-      console.error("Biometric login failed:", err);
-      Alert.alert("Login failed", "Could not authenticate with biometrics.");
+      console.error("Biometric login failed (DEV fallback):", err);
+      Alert.alert("Login failed", "Could not authenticate.");
     }
-  };
+
+    return;
+  }
+
+  // 🔐 Biometric prompt for real devices
+  const result = await LocalAuthentication.authenticateAsync({
+    promptMessage: "Login with biometrics",
+  });
+
+  console.log("Biometric result:", result);
+
+  if (!result.success) {
+    if (result.error === "not_enrolled") {
+      Alert.alert(
+        "Biometric not set up",
+        "Please enroll your fingerprint or face ID and enable a lock screen."
+      );
+    } else {
+      Alert.alert("Biometric authentication failed", result.error || "Unknown error");
+    }
+    return;
+  }
+
+  // 🧠 Proceed with credential-based sign-in
+  const storedCreds = await SecureStore.getItemAsync("credentials");
+  if (!storedCreds) {
+    Alert.alert("No saved credentials found");
+    return;
+  }
+
+  const { email, password } = JSON.parse(storedCreds);
+
+  try {
+    if (!signIn) {
+  Alert.alert("Sign-in is not available");
+  return;
+}
+    const signInAttempt = await signIn.create({ identifier: email, password });
+
+    if (signInAttempt.status === "complete") {
+      await setActive({ session: signInAttempt.createdSessionId });
+      router.replace("/"); // ✅ Redirect to home
+    } else {
+      Alert.alert("Additional verification required.");
+    }
+  } catch (err) {
+    console.error("Biometric login failed:", err);
+    Alert.alert("Login failed", "Could not authenticate with biometrics.");
+  }
+};
+
 
   const handleProvidersSignIn = useCallback(
     async (strategy: "oauth_google" | "oauth_apple" | "oauth_github") => {
@@ -173,18 +214,27 @@ const Form: FC = () => {
       const hasHardware = await LocalAuthentication.hasHardwareAsync();
       const isEnrolled = await LocalAuthentication.isEnrolledAsync();
       const storedCreds = await SecureStore.getItemAsync("credentials");
-      console.log("Biometric available:", hasHardware, isEnrolled, storedCreds);
+      console.log("Biometric available:", hasHardware, storedCreds);
 
-      setCanUseBiometrics(hasHardware && /*isEnrolled &&*/ !!storedCreds);
+      const biometricsAvailable = hasHardware && isEnrolled && !!storedCreds;
+
+    // 👇 Allow bypass for emulator/dev only
+    if (__DEV__ && storedCreds) {
+      console.warn("Bypassing biometric check in DEV mode");
+      setCanUseBiometrics(true);
+    } else {
+      setCanUseBiometrics(biometricsAvailable);
+    }
+
     })();
   }, []);
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
-        <View style={{ flex: 2 }}>
+        <View style={{ flex: 2, justifyContent: "space-between" }}>
           {/* <Header title="Sign In" headerStyles={styles.header} /> */}
-
+<View>
           <BaseTextInput
             label="Email"
             value={email}
@@ -211,7 +261,7 @@ const Form: FC = () => {
               }
             />
           </View>
-          {/* </View> */}
+          </View>
 
           {canUseBiometrics && (
             <IconButton
@@ -225,7 +275,7 @@ const Form: FC = () => {
           <BaseButton
             disabled={isDisabled}
             title="Sign In"
-            containerStyles={{ marginBottom: 16 }}
+            containerStyles={{ marginBottom: 16}}
             onPress={() => handleSignIn(false)}
           />
         </View>
