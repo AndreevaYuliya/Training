@@ -2,86 +2,90 @@ import BaseTextInput from '@/src/components/BaseTextInput';
 import BaseButton from '@/src/components/buttons/BaseButton';
 import Header from '@/src/components/Header';
 import { useSignUp, useUser } from '@clerk/clerk-expo';
-import { router } from 'expo-router';
-import { FC, useState } from 'react';
+import { FC, useRef, useState } from 'react';
 import {
 	Keyboard,
 	ScrollView,
 	StyleSheet,
 	Text,
-	TextInput,
-	TouchableOpacity,
 	TouchableWithoutFeedback,
 	View,
 } from 'react-native';
 
+import { BottomSheetModal, BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+
+import BaseBottomSheetModal, {
+	BottomSheetModalMethods,
+} from '@/src/components/BaseBottomSheetModal';
+import { router } from 'expo-router';
+
 const Form: FC = () => {
 	const { isLoaded, signUp, setActive } = useSignUp();
 
-	const [email, setEmail] = useState('');
-	const [name, setName] = useState('');
-	const [username, setUsername] = useState('');
-	const [phoneNumber, setPhoneNumber] = useState('');
-	const [password, setPassword] = useState('');
-	const [confirmedPassword, setConfirmedPassword] = useState('');
+	const bottomSheetRef = useRef<BottomSheetModalMethods>(null);
+
+	const [email, setEmail] = useState('yuliya2080219@gmail.com');
+	const [name, setName] = useState('Yuliia');
+	const [username, setUsername] = useState('Yuliia11');
+	const [phoneNumber, setPhoneNumber] = useState('+380961545544');
+	const [password, setPassword] = useState('Rain2024*Secure');
+	const [confirmedPassword, setConfirmedPassword] = useState('Rain2024*Secure');
 	const [error, setError] = useState('');
 	const [pendingVerification, setPendingVerification] = useState(false);
+
 	const [code, setCode] = useState('');
 
-	const { user } = useUser();
+	const [verificationCode, setVerificationCode] = useState('');
 
 	const isDisabled = !email || password !== confirmedPassword;
 
 	// Handle submission of sign-up form
 	const handleSignUp = async () => {
+		console.log('handleSignUp triggered');
 		if (!isLoaded) return;
 
-		console.log(email, password);
-
-		// Start sign-up process using email and password provided
 		try {
-			await signUp.create({
+			// Step 1: Create the sign-up but do NOT activate session yet
+			const createResult = await signUp.create({
 				emailAddress: email,
 				password,
+				firstName: name,
+				username,
+				unsafeMetadata: { phoneNumber },
 			});
 
-			// Send user an email with verification code
-			await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+			console.log('signUp.create result:', createResult);
 
-			// Set 'pendingVerification' to true to display second form
-			// and capture OTP code
+			// Step 2: Prepare the email verification (send code)
+			const prepResult = await signUp.prepareEmailAddressVerification({
+				strategy: 'email_code',
+			});
+
+			console.log('prepareEmailAddressVerification result:', prepResult);
+
+			// Step 3: Show verification UI
 			setPendingVerification(true);
+			bottomSheetRef.current?.show('signUp');
 		} catch (err) {
-			// See https://clerk.com/docs/custom-flows/error-handling
-			// for more info on error handling
-			console.error(JSON.stringify(err, null, 2));
+			console.error('Sign-up error:', err);
+			setError('Sign-up failed');
 		}
 	};
 
-	// Handle submission of verification form
 	const onVerifyPress = async () => {
 		if (!isLoaded) return;
 
 		try {
 			// Use the code the user provided to attempt verification
 			const signUpAttempt = await signUp.attemptEmailAddressVerification({
-				code,
+				code: verificationCode,
 			});
 
 			// If verification was completed, set the session to active
 			// and redirect the user
 			if (signUpAttempt.status === 'complete') {
 				await setActive({ session: signUpAttempt.createdSessionId });
-
-				await user?.update({
-					unsafeMetadata: {
-						name,
-						username,
-						phoneNumber,
-					},
-				});
-
-				router.replace('/auth');
+				router.replace('/');
 			} else {
 				// If the status is not complete, check why. User may need to
 				// complete further steps.
@@ -94,122 +98,123 @@ const Form: FC = () => {
 		}
 	};
 
-	if (pendingVerification) {
-		return (
-			<>
-				<Text>Verify your email</Text>
-				<TextInput
-					value={code}
-					placeholder="Enter your verification code"
-					onChangeText={(code) => setCode(code)}
-				/>
-				<TouchableOpacity onPress={onVerifyPress}>
-					<Text>Verify</Text>
-				</TouchableOpacity>
-			</>
-		);
-	}
-
 	return (
-		<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-			<ScrollView
-				showsVerticalScrollIndicator={false}
-				style={styles.container}
-				contentContainerStyle={styles.contentContainerStyle}
-			>
-				<View>
-					<Header
-						title="Sign Up"
-						headerStyles={styles.header}
-					/>
+		<BottomSheetModalProvider>
+			<View style={{ flex: 1 }}>
+				<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+					<ScrollView
+						showsVerticalScrollIndicator={false}
+						style={styles.container}
+						contentContainerStyle={styles.contentContainerStyle}
+					>
+						<View>
+							<Header
+								title="Sign Up"
+								headerStyles={styles.header}
+							/>
 
-					<BaseTextInput
-						label={['Email', '*']}
-						value={email}
-						placeholder="Enter your email"
-						labelStyles={[
-							{},
-							{
-								position: 'absolute',
-								top: -5,
-								left: 55,
-								color: 'red',
-								fontSize: 32,
-							},
-						]}
-						onChangeText={(prevEmail) => setEmail(prevEmail.toLowerCase())}
-					/>
+							<BaseTextInput
+								label={['Email', '*']}
+								value={email}
+								placeholder="Enter your email"
+								labelStyles={[
+									{},
+									{
+										position: 'absolute',
+										top: -5,
+										left: 55,
+										color: 'red',
+										fontSize: 32,
+									},
+								]}
+								onChangeText={(prevEmail) => setEmail(prevEmail.toLowerCase())}
+							/>
 
-					<BaseTextInput
-						label="Name"
-						value={name}
-						placeholder="Enter your name"
-						onChangeText={(prevName) => setName(prevName)}
-					/>
+							<BaseTextInput
+								label="Name"
+								value={name}
+								placeholder="Enter your name"
+								onChangeText={(prevName) => setName(prevName)}
+							/>
 
-					<BaseTextInput
-						label="Username"
-						value={username}
-						placeholder="Enter your username"
-						onChangeText={(prevUsername) => setUsername(prevUsername)}
-					/>
+							<BaseTextInput
+								label="Username"
+								value={username}
+								placeholder="Enter your username"
+								onChangeText={(prevUsername) => setUsername(prevUsername)}
+							/>
 
-					<BaseTextInput
-						label="Phone number"
-						value={phoneNumber}
-						placeholder="Enter your phone number"
-						onChangeText={(prevPhoneNumber) => setPhoneNumber(prevPhoneNumber)}
-					/>
+							<BaseTextInput
+								label="Phone number"
+								value={phoneNumber}
+								placeholder="Enter your phone number"
+								onChangeText={(prevPhoneNumber) => setPhoneNumber(prevPhoneNumber)}
+							/>
 
-					<BaseTextInput
-						label={['Password', '*']}
-						value={password}
-						placeholder="Enter your password"
-						isSecure
-						labelStyles={[
-							{},
-							{
-								position: 'absolute',
-								top: -5,
-								left: 95,
-								color: 'red',
-								fontSize: 32,
-							},
-						]}
-						onChangeText={(prevPassword) => setPassword(prevPassword)}
-					/>
+							<BaseTextInput
+								label={['Password', '*']}
+								value={password}
+								placeholder="Enter your password"
+								isSecure
+								labelStyles={[
+									{},
+									{
+										position: 'absolute',
+										top: -5,
+										left: 95,
+										color: 'red',
+										fontSize: 32,
+									},
+								]}
+								onChangeText={(prevPassword) => setPassword(prevPassword)}
+							/>
 
-					<BaseTextInput
-						label={['Confirm password', '*']}
-						value={confirmedPassword}
-						placeholder="Confirm your password"
-						isSecure
-						labelStyles={[
-							{},
-							{
-								position: 'absolute',
-								top: -5,
-								left: 170,
-								color: 'red',
-								fontSize: 32,
-							},
-						]}
-						onChangeText={(prevConfirmedPassword) =>
-							setConfirmedPassword(prevConfirmedPassword)
-						}
-					/>
-				</View>
+							<BaseTextInput
+								label={['Confirm password', '*']}
+								value={confirmedPassword}
+								placeholder="Confirm your password"
+								isSecure
+								labelStyles={[
+									{},
+									{
+										position: 'absolute',
+										top: -5,
+										left: 170,
+										color: 'red',
+										fontSize: 32,
+									},
+								]}
+								onChangeText={(prevConfirmedPassword) =>
+									setConfirmedPassword(prevConfirmedPassword)
+								}
+							/>
+						</View>
 
-				<BaseButton
-					disabled={isDisabled}
-					title="Sign Up"
-					onPress={handleSignUp}
-					containerStyles={{ marginTop: 24 }}
+						<BaseButton
+							disabled={isDisabled}
+							title="Sign Up"
+							onPress={handleSignUp}
+							containerStyles={{ marginTop: 24 }}
+						/>
+
+						{error && <Text>{error}</Text>}
+					</ScrollView>
+				</TouchableWithoutFeedback>
+
+				<BaseBottomSheetModal
+					ref={bottomSheetRef}
+					setVerificationCode={setVerificationCode}
+					emailToVerify={null} // или актуальный EmailAddressResource, если есть
+					onSuccess={() => {
+						// логика после успешной верификации
+						bottomSheetRef.current?.close();
+						setVerificationCode('');
+						setPendingVerification(false);
+					}}
+					onPress={onVerifyPress}
 				/>
-
-				{error && <Text>{error}</Text>}
-			</ScrollView>
-		</TouchableWithoutFeedback>
+			</View>
+		</BottomSheetModalProvider>
 	);
 };
 
