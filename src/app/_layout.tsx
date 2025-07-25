@@ -1,11 +1,11 @@
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import { router, Slot, usePathname } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { ActivityIndicator, Text, View, StyleSheet } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { tokenCache } from '@clerk/clerk-expo/token-cache';
 
@@ -37,10 +37,10 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 	useEffect(() => {
 		if (!isLoaded) return;
 
-		if (isSignedIn && pathname !== '/auth') {
+		if (isSignedIn && (pathname === '/' || pathname === '/auth')) {
 			console.log(isSignedIn, pathname);
 			console.log('Redirecting to /auth');
-			router.replace('/auth');
+			router.push('/auth/Profile');
 		}
 	}, [isLoaded, isSignedIn, pathname]);
 

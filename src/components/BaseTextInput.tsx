@@ -1,18 +1,19 @@
-import { FC, useState } from 'react';
+import { FC, ReactNode, useState } from 'react';
 import { StyleProp, StyleSheet, Text, TextInput, TextStyle, View, ViewStyle } from 'react-native';
 import COLORS from '../constants/colors';
 import IconButton from './buttons/IconButton';
 
 type Props = {
-	label: string | string[];
+	label?: string | string[];
 	value: string;
-	placeholder: string;
+	placeholder?: string;
 	isSecure?: boolean;
 	onChangeText: (value: string) => void;
 	onBlur?: () => void;
 	containerStyles?: StyleProp<ViewStyle>;
 	labelStyles?: StyleProp<TextStyle> | StyleProp<TextStyle>[];
 	inputStyles?: StyleProp<TextStyle>;
+	children?: ReactNode;
 };
 
 const BaseTextInput: FC<Props> = (props) => {
@@ -26,6 +27,7 @@ const BaseTextInput: FC<Props> = (props) => {
 		containerStyles,
 		labelStyles,
 		inputStyles,
+		children,
 	} = props;
 
 	const [isHidden, setIsHidden] = useState<boolean>(!!isSecure);
@@ -67,6 +69,8 @@ const BaseTextInput: FC<Props> = (props) => {
 						onPress={() => setIsHidden((prevIsHidden) => !prevIsHidden)}
 					/>
 				)}
+
+				{children}
 			</View>
 		</View>
 	);

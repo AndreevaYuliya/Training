@@ -1,13 +1,11 @@
-import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
-import { Text, View, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
-import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
+import COLORS from '@/src/constants/colors';
 import { useSignUp, useUser } from '@clerk/clerk-expo';
 import { EmailAddressResource } from '@clerk/types';
-import COLORS from '@/src/constants/colors';
-import BaseButton from './buttons/BaseButton';
-import updateUserEmail from '../hooks/updateUserEmail';
+import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
+import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
+import { Platform, StyleSheet, Text } from 'react-native';
 import BaseTextInput from './BaseTextInput';
-import { router } from 'expo-router';
+import BaseButton from './buttons/BaseButton';
 
 type Props = {
 	setVerificationCode: (code: string) => void;
@@ -136,6 +134,7 @@ const BaseBottomSheetModal = forwardRef<BottomSheetModalMethods, Props>((props, 
 					paddingHorizontal: 32,
 					// alignItems: 'center',
 					justifyContent: 'center',
+					paddingBottom: Platform.OS === 'android' ? 32 : undefined,
 				}}
 			>
 				<BaseTextInput

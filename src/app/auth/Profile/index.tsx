@@ -14,48 +14,46 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { router } from 'expo-router';
 
-import { useClerk, useSignUp, useUser } from '@clerk/clerk-expo';
+import { useClerk, useUser } from '@clerk/clerk-expo';
 
 import Header from '@/src/components/Header';
 import TextButton from '@/src/components/buttons/TextButton';
 
-import BaseButton from '@/src/components/buttons/BaseButton';
-import COLORS from '@/src/constants/colors';
 import BaseBottomSheetModal, {
 	BottomSheetModalMethods,
 } from '@/src/components/BaseBottomSheetModal';
+import BaseButton from '@/src/components/buttons/BaseButton';
+import COLORS from '@/src/constants/colors';
 import updateUserEmail from '@/src/hooks/updateUserEmail';
 import { EmailAddressResource } from '@clerk/types';
 
 const Profile: FC = () => {
+	const insets = useSafeAreaInsets();
+
+	const { signOut } = useClerk();
+	const { user } = useUser();
+
+	const bottomSheetRef = useRef<BottomSheetModalMethods>(null);
+
+	const [editingField, setEditingField] = useState<'name' | 'username' | 'phone' | null>(null);
+
 	const [isEditingName, setIsEditingName] = useState(false);
 	const [isEditingUsername, setIsEditingUsername] = useState(false);
 	const [isEditingEmail, setIsEditingEmail] = useState(false);
 	const [isEditingPhonenumber, setIsEditingPhonenumber] = useState(false);
 
 	const [error, setError] = useState('');
-	const [emailToVerify, setEmailToVerify] = useState<EmailAddressResource | string | null>(null);
+	const [emailToVerify, setEmailToVerify] = useState<EmailAddressResource | null>(null);
 	const [verificationCode, setVerificationCode] = useState('');
 
-	const { user } = useUser();
-
-	const bottomSheetRef = useRef<BottomSheetModalMethods>(null);
-
-	console.log('user.firstName:', user?.firstName); // Основное имя
-	console.log('user.publicMetadata:', user?.publicMetadata); // Общее мета
-	console.log('user.unsafeMetadata:', user?.unsafeMetadata); // Польз. мета
-	// const [name, setName] = useState(String(user?.unsafeMetadata.name ?? ''));
+	// console.log('user.firstName:', user?.firstName); // Основное имя
+	// console.log('user.publicMetadata:', user?.publicMetadata); // Общее мета
+	// console.log('user.unsafeMetadata:', user?.unsafeMetadata); // Польз. мета
 
 	const [name, setName] = useState(user?.firstName ?? '');
 	const [username, setUserame] = useState(user?.username ?? '');
 	const [email, setEmail] = useState(user?.emailAddresses[0].emailAddress ?? '');
 	const [pendingVerification, setPendingVerification] = useState(false);
-
-	const { signOut } = useClerk();
-
-	const { isLoaded, signUp, setActive } = useSignUp();
-
-	const insets = useSafeAreaInsets();
 
 	if (!user) {
 		return null;
@@ -67,12 +65,13 @@ const Profile: FC = () => {
 		if (!user) return;
 
 		try {
-			const newEmailObj = await user.createEmailAddress({ email });
+			const newEmailObj = await updateUserEmail(user, email);
 
-			await newEmailObj.prepareVerification({ strategy: 'email_code' });
-
-			setEmailToVerify(newEmailObj);
-			bottomSheetRef.current?.show('changeEmail');
+			if (newEmailObj) {
+				setEmailToVerify(newEmailObj);
+				setPendingVerification(true);
+				bottomSheetRef.current?.show('changeEmail');
+			}
 		} catch (err: any) {
 			console.error('Failed to send verification code:', err);
 			setError(err.errors?.[0]?.message || 'Something went wrong');
@@ -81,46 +80,43 @@ const Profile: FC = () => {
 
 	// В родителе (Profile.tsx или где у тебя состояние и модалка):
 	const handleVerifyEmail = async () => {
-		if (!emailToVerify || typeof emailToVerify === 'string') {
-			setError('Invalid email to verify');
-			return;
-		}
+		if (!user || !emailToVerify || !verificationCode) return;
 
 		try {
 			await emailToVerify.attemptVerification({ code: verificationCode });
+
 			await user.update({ primaryEmailAddressId: emailToVerify.id });
+
+			// delete old emails
+			const oldEmails = user.emailAddresses.filter((email) => email.id !== emailToVerify.id);
+			for (const email of oldEmails) {
+				await email.destroy();
+			}
 
 			setPendingVerification(false);
 			setEmailToVerify(null);
-			setVerificationCode('');
 			bottomSheetRef.current?.close();
 		} catch (err: any) {
-			console.error('Email verification failed:', err);
-			setError(err.errors?.[0]?.message || 'Verification failed');
+			console.error('Verification error:', err);
+			setError(err.errors?.[0]?.message || 'Invalid code');
 		}
 	};
 
 	// Email onBlur handler
-	const handleEmailBlur = async () => {
-		if (!user) return;
-
-		console.log('Email input blurred with value:', email);
-
-		try {
-			const newEmailObj = await updateUserEmail(user, email);
-
-			if (newEmailObj) {
-				setPendingVerification(true);
-				// bottomSheetRef.current?.show('changeEmail');
-			} else {
-				alert('Email is the same or already used');
+	const handleCancelEmailChange = async () => {
+		if (emailToVerify) {
+			try {
+				// Clean up the unverified email if user cancels
+				await emailToVerify.destroy();
+			} catch (err) {
+				console.warn('Failed to destroy unverified email:', err);
 			}
-
-			setIsEditingEmail(false);
-		} catch (error) {
-			console.error('Failed to update email:', error);
-			// setError('Failed to update email. Please try again.');
 		}
+
+		setEmailToVerify(null);
+		setPendingVerification(false);
+		setIsEditingEmail(false);
+		bottomSheetRef.current?.close();
 	};
 
 	const handleDeleteProfile = async () => {
@@ -234,7 +230,7 @@ const Profile: FC = () => {
 							))}
 						</Pressable>
 					) : (
-						<>
+						<View>
 							<TextInput
 								style={{
 									fontSize: 28,
@@ -243,36 +239,52 @@ const Profile: FC = () => {
 								value={email}
 								onChangeText={(prevEmail) => setEmail(prevEmail.toLowerCase())}
 								onFocus={() => setIsEditingEmail(true)}
-								onBlur={handleEmailBlur}
+								// onBlur={handleCancelEmailChange}
 								autoFocus
 							/>
 
-							<BaseButton
-								title="Save Email"
-								onPress={onConfirmPress}
-							/>
-						</>
+							<View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+								<BaseButton
+									title="Save Email"
+									buttonStyles={{ padding: 15 }}
+									onPress={onConfirmPress}
+								/>
+
+								<BaseButton
+									title="Cancel"
+									buttonStyles={{ padding: 15 }}
+									onPress={handleCancelEmailChange}
+								/>
+							</View>
+						</View>
 					)}
 
-					{/* <Text style={{ fontSize: 20, color: COLORS.blue, marginTop: 16 }}>
-						Email: {user.emailAddresses[0]?.emailAddress}
-					</Text> */}
-
-					{String(user.unsafeMetadata?.phoneNumber) && (
+					{user.unsafeMetadata?.phoneNumber ? (
 						<Text style={{ fontSize: 20, color: COLORS.blue, marginTop: 16 }}>
-							Phonenumber:{' '}
-							{String(user.unsafeMetadata?.phoneNumber || 'Phone not provided')}
+							Phone number: {String(user.unsafeMetadata.phoneNumber)}
 						</Text>
-					)}
+					) : null}
 				</View>
 			</TouchableWithoutFeedback>
 
-			<BaseButton
-				title="Delete profile"
-				containerStyles={{ marginHorizontal: 32, marginBottom: 32 }}
-				onPress={handleDeleteProfile}
-			/>
+			<View style={{ flexDirection: 'row' }}>
+				<BaseButton
+					title="Edit profile"
+					containerStyles={{ marginHorizontal: 32, marginBottom: 32 }}
+					buttonStyles={{ padding: 15 }}
+					onPress={() => {
+						console.log('navigating');
+						router.push('/auth/Profile/EditProfile');
+					}}
+				/>
 
+				<BaseButton
+					title="Delete profile"
+					containerStyles={{ marginHorizontal: 32, marginBottom: 32 }}
+					buttonStyles={{ padding: 15 }}
+					onPress={handleDeleteProfile}
+				/>
+			</View>
 			<BaseBottomSheetModal
 				ref={bottomSheetRef}
 				setVerificationCode={setVerificationCode}
