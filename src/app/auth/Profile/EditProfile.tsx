@@ -25,7 +25,7 @@ import BaseModal from '@/src/components/BaseModal';
 import BaseTextInput from '@/src/components/BaseTextInput';
 import BaseButton from '@/src/components/buttons/BaseButton';
 import IconButton from '@/src/components/buttons/IconButton';
-import COLORS, { COLORS3, COLORS4 } from '@/src/constants/colors';
+import COLORS, { COLORS5 } from '@/src/constants/colors';
 import updateUserEmail from '@/src/hooks/updateUserEmail';
 import { EmailAddressResource } from '@clerk/types';
 
@@ -393,7 +393,7 @@ const EditProfile: FC = () => {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: COLORS.background,
+		backgroundColor: COLORS5.background,
 	},
 
 	avatarWrapper: {

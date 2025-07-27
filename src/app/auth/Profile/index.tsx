@@ -1,15 +1,5 @@
 import React, { FC, useRef, useState } from 'react';
-import {
-	Image,
-	Keyboard,
-	Pressable,
-	StyleSheet,
-	Text,
-	TextInput,
-	TouchableOpacity,
-	TouchableWithoutFeedback,
-	View,
-} from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { router } from 'expo-router';
@@ -17,24 +7,11 @@ import { router } from 'expo-router';
 import { useClerk, useUser } from '@clerk/clerk-expo';
 
 import Header from '@/src/components/Header';
-import TextButton from '@/src/components/buttons/TextButton';
 
-import BaseBottomSheetModal, {
-	BottomSheetModalMethods,
-} from '@/src/components/BaseBottomSheetModal';
+import { BottomSheetModalMethods } from '@/src/components/BaseBottomSheetModal';
 import BaseButton from '@/src/components/buttons/BaseButton';
-import COLORS, { COLORS2, COLORS3, COLORS4 } from '@/src/constants/colors';
-import updateUserEmail from '@/src/hooks/updateUserEmail';
-import { EmailAddressResource } from '@clerk/types';
-import {
-	Feather,
-	FontAwesome,
-	FontAwesome5,
-	Ionicons,
-	MaterialCommunityIcons,
-	MaterialIcons,
-} from '@expo/vector-icons';
 import IconButton from '@/src/components/buttons/IconButton';
+import { COLORS5 } from '@/src/constants/colors';
 
 const Profile: FC = () => {
 	const insets = useSafeAreaInsets();
@@ -79,21 +56,21 @@ const Profile: FC = () => {
 					style={styles.avatar}
 				/>
 				{user.firstName && (
-					<Text style={{ fontSize: 28, color: COLORS3.white }}>{name}</Text>
+					<Text style={{ fontSize: 28, color: COLORS5.primaryText }}>{name}</Text>
 				)}
 
 				{user.username && (
-					<Text style={{ fontSize: 20, color: COLORS2.blue, marginTop: 8 }}>
+					<Text style={{ fontSize: 20, color: COLORS5.secondaryText, marginTop: 8 }}>
 						@{user.username}
 					</Text>
 				)}
 
-				<Text style={{ fontSize: 20, color: COLORS2.blue, marginTop: 16 }}>
+				<Text style={{ fontSize: 20, color: COLORS5.secondaryText, marginTop: 16 }}>
 					Email: {user.emailAddresses[0].emailAddress}
 				</Text>
 
 				{user.unsafeMetadata?.phoneNumber ? (
-					<Text style={{ fontSize: 20, color: COLORS.white, marginTop: 16 }}>
+					<Text style={{ fontSize: 20, color: COLORS5.secondaryText, marginTop: 16 }}>
 						Phone number: {String(user.unsafeMetadata.phoneNumber)}
 					</Text>
 				) : null}
@@ -117,7 +94,7 @@ const Profile: FC = () => {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: COLORS.background,
+		backgroundColor: COLORS5.background,
 	},
 	avatar: {
 		width: 140,

@@ -2,7 +2,7 @@ import { FC } from 'react';
 
 import { Pressable, StyleProp, StyleSheet, ViewStyle } from 'react-native';
 
-import COLORS, { COLORS2, COLORS4 } from '@/src/constants/colors';
+import COLORS, { COLORS5 } from '@/src/constants/colors';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import ArrowLeftIcon from '../../assets/icons/back.svg';
 import CloseEyeIcon from '../../assets/icons/close-eye.svg';
@@ -116,7 +116,7 @@ const IconButton: FC<Props> = (props) => {
 				return (
 					<FontAwesome
 						name="trash"
-						color={COLORS2.black}
+						color={COLORS5.icon}
 						size={24}
 					/>
 				);

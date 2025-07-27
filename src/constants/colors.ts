@@ -2,7 +2,7 @@ const COLORS = {
 	background: 'rgba(129, 212, 250, 1)',
 	black: 'rgba(0, 0, 0, 1)',
 	blue: 'rgba(0, 0, 255, 1)',
-	containerBackground: '#rgba(97, 212, 250, 1)',
+	containerBackground: 'rgba(97, 212, 250, 1)',
 	red: 'rgba(255, 0, 0, 1)',
 	transparent: 'rgba(0, 0, 0, 0.7)',
 	white: 'rgba(255, 255, 255, 1)',
@@ -74,3 +74,71 @@ export const COLORS4 = {
 	// Transparent
 	transparent: 'rgba(0, 0, 0, 0)',
 };
+
+export const COLORS5 = {
+	background: 'rgba(139, 212, 250, 1)',  //FAVOURITE
+
+	primaryText: 'rgba(255, 255, 255, 1)',
+	secondaryText2: 'rgba(41, 98, 255, 1)',
+	secondaryText3: 'rgba(3, 169, 244, 1)',
+	secondaryText: 'rgba(200, 200, 200, 1)', 
+
+
+	textButton: 'rgba(0, 122, 255, 1),',
+	textButton2: 'rgba(30, 136, 229, 1)',
+
+	icon: 'rgba(85, 85, 85, 1)',
+
+	baseButtonBGC: 'rgba(3, 169, 244, 1)',
+	baseButtonBGC2: 'rgba(41, 98, 255, 1)',
+
+	baseButtonText: 'rgba(255, 255, 255, 1)',
+
+	inputBGC: 'rgba(255, 255, 255, 1)',
+	inputText: 'rgba(26, 26, 26, 1)',
+
+
+	backgroundSoft: 'rgba(179, 229, 252, 1)',
+	// backgroundSky: 'rgba(144, 202, 249, 1)',
+	// backgroundLight: 'rgba(240, 248, 255, 1)',
+
+	
+	background1: 'rgba(179, 229, 252, 1)',              // NORM BGC
+	backgroundAlt: 'rgba(144, 202, 249, 1)',             // NORM BGC
+	
+	background2: 'rgba(63, 81, 181, 1)', // Indigo - #3F51B5
+	background3: 'rgba(30, 136, 229, 1)', // Blue - #1E88E5
+	background4: 'rgba(0, 229, 255, 1)',
+	background5: 'rgba(41, 98, 255, 1)',
+	background6: 'rgba(0, 122, 255, 1),',
+	background7: 'rgba(3, 169, 244, 1)',
+	
+	background8: 'rgba(2, 136, 209, 1)', // On press
+	background9: 'rgba(33, 150, 243, 1)',  
+	background10: 'rgba(240, 248, 255, 1)',
+	background11: 'rgba(100, 181, 246, 1)', // Info - subtle light blue
+	background12: 'rgba(97, 212, 250, 1)',
+}
+
+
+
+export const COLORS6 = {
+	background1: 'rgba(120, 81, 169, 1)',       // Medium purple (soft but rich)
+  background: 'rgba(123, 104, 238, 1)',
+
+  primaryText: 'rgba(255, 255, 255, 1)',     // White for main text on purple bg
+  secondaryText: 'rgba(149, 117, 205, 1)',   // Light lavender purple for secondary text
+
+  textButton1: 'rgba(123, 104, 238, 1)',      // Medium slate blue for links/buttons
+  textButton2: 'rgba(120, 81, 169, 1)',  
+
+  icon: 'rgba(85, 85, 85, 1)',               // Neutral dark grey for icons
+
+  baseButtonBGC: 'rgba(98, 0, 238, 1)',      // Vivid purple for buttons
+  baseButtonText: 'rgba(255, 255, 255, 1)',  // White text on buttons
+
+  inputBGC: 'rgba(245, 240, 255, 1)',        // Very pale lavender background for inputs
+  inputText: 'rgba(26, 26, 26, 1)',          // Dark text in inputs
+};
+
+

@@ -1,7 +1,7 @@
-import COLORS, { COLORS2, COLORS3, COLORS4 } from '@/src/constants/colors';
+import { COLORS5 } from '@/src/constants/colors';
 import React, { FC, ReactNode } from 'react';
 
-import { Pressable, StyleProp, Text, TextStyle, ViewStyle, StyleSheet, View } from 'react-native';
+import { Pressable, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
 
 type Props = {
 	disabled?: boolean;
@@ -53,12 +53,12 @@ const styles = StyleSheet.create({
 		borderRadius: 32,
 		justifyContent: 'center',
 		alignSelf: 'stretch',
-		backgroundColor: COLORS4.primary,
+		backgroundColor: COLORS5.baseButtonBGC,
 	},
 
 	buttonTitle: {
 		fontSize: 22,
-		color: 'white',
+		color: COLORS5.baseButtonText,
 		textAlign: 'center',
 	},
 });
