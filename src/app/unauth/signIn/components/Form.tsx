@@ -181,7 +181,9 @@ const Form: FC = () => {
 
 				// If sign in was successful, set the active session
 				if (createdSessionId) {
-					setActive!({ session: createdSessionId });
+					await setActive?.({ session: createdSessionId });
+
+					router.replace('/auth/Profile');
 				} else {
 					// If there is no `createdSessionId`,
 					// there are missing requirements, such as MFA

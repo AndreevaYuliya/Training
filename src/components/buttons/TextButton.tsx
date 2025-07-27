@@ -1,4 +1,4 @@
-import COLORS from '@/src/constants/colors';
+import COLORS, { COLORS2, COLORS3, COLORS4 } from '@/src/constants/colors';
 import React, { FC, ReactNode } from 'react';
 
 import { Pressable, StyleProp, StyleSheet, Text, TextStyle, ViewStyle } from 'react-native';
@@ -38,7 +38,8 @@ const styles = StyleSheet.create({
 
 	buttonTitle: {
 		fontSize: 18,
-		color: COLORS.blue,
+		fontWeight: 500,
+		color: COLORS3.primary,
 		textAlign: 'center',
 		textDecorationLine: 'underline',
 	},

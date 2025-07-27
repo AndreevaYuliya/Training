@@ -25,7 +25,7 @@ import BaseModal from '@/src/components/BaseModal';
 import BaseTextInput from '@/src/components/BaseTextInput';
 import BaseButton from '@/src/components/buttons/BaseButton';
 import IconButton from '@/src/components/buttons/IconButton';
-import COLORS from '@/src/constants/colors';
+import COLORS, { COLORS3, COLORS4 } from '@/src/constants/colors';
 import updateUserEmail from '@/src/hooks/updateUserEmail';
 import { EmailAddressResource } from '@clerk/types';
 
@@ -124,8 +124,7 @@ const EditProfile: FC = () => {
 			return;
 		}
 
-		Alert.alert('Clear Field', `Are you sure you want to delete your ${field}?`, [
-			{ text: 'Cancel', style: 'cancel' },
+		Alert.alert(`Delete ${field}`, `Are you sure you want to delete your ${field}?`, [
 			{
 				text: 'Delete',
 				style: 'destructive',
@@ -148,6 +147,8 @@ const EditProfile: FC = () => {
 					}
 				},
 			},
+
+			{ text: 'Cancel', style: 'cancel' },
 		]);
 	};
 
@@ -156,13 +157,22 @@ const EditProfile: FC = () => {
 			return;
 		}
 
-		try {
-			await user.delete(); // Deletes the user
-			await signOut(); // Clears local session/cache if still present
-			router.replace('/unauth/signIn');
-		} catch (error) {
-			console.error('Failed to delete profile:', error);
-		}
+		Alert.alert('Delete account', 'Are you sure you want to delete your account?', [
+			{
+				text: 'Delete',
+				style: 'destructive',
+				onPress: async () => {
+					try {
+						await user.delete(); // Deletes the user
+						await signOut(); // Clears local session/cache if still present
+						router.replace('/unauth/signIn');
+					} catch (error) {
+						console.error('Failed to delete profile:', error);
+					}
+				},
+			},
+			{ text: 'Cancel', style: 'cancel' },
+		]);
 	};
 
 	if (!user) {
@@ -174,15 +184,7 @@ const EditProfile: FC = () => {
 			<Header
 				backButton
 				title="Edit Profile"
-			>
-				<TextButton
-					title="Logout"
-					onPress={async () => {
-						await signOut();
-						router.replace('/unauth/signIn');
-					}}
-				/>
-			</Header>
+			/>
 
 			<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
 				<View
@@ -206,94 +208,114 @@ const EditProfile: FC = () => {
 					{!name ? (
 						<TextButton
 							title="+ Add name"
+							buttonStyles={{ alignItems: 'flex-start' }}
+							titleStyles={{ textDecorationLine: 'none' }}
 							onPress={() => setEditingField('name')}
 						/>
 					) : (
-						<BaseTextInput
-							label="Name"
-							placeholder="Enter your name"
-							value={name}
-							onChangeText={setName}
-						>
-							<IconButton
-								iconName="save"
-								buttonStyles={{ position: 'absolute', right: 55 }}
-								onPress={() => user.update({ firstName: name })}
-							/>
+						<View style={{ flexDirection: 'row', gap: 16 }}>
+							<BaseTextInput
+								label="Name"
+								placeholder="Enter your name"
+								value={name}
+								containerStyles={{ flex: 1 }}
+								onChangeText={setName}
+							>
+								<TextButton
+									title="Save"
+									buttonStyles={{ position: 'absolute', right: 15 }}
+									titleStyles={{ textDecorationLine: 'none' }}
+									onPress={() => user.update({ firstName: name })}
+								/>
+							</BaseTextInput>
 
 							<IconButton
 								iconName="trash"
-								buttonStyles={{ position: 'absolute', right: 15 }}
+								buttonStyles={{ marginTop: 25 }}
 								onPress={() => handleFieldDelete('name')}
 							/>
-						</BaseTextInput>
+						</View>
 					)}
 
 					{!username ? (
 						<TextButton
 							title="+ Add username"
 							buttonStyles={{ alignItems: 'flex-start' }}
+							titleStyles={{ textDecorationLine: 'none' }}
 							onPress={() => setEditingField('username')}
 						/>
 					) : (
-						<BaseTextInput
-							label="Username"
-							placeholder="Enter your username"
-							value={username}
-							onChangeText={setUsername}
-						>
-							<IconButton
-								iconName="save"
-								buttonStyles={{ position: 'absolute', right: 55 }}
-								onPress={() => user.update({ username: username })}
-							/>
+						<View style={{ flexDirection: 'row', gap: 16 }}>
+							<BaseTextInput
+								label="Username"
+								placeholder="Enter your username"
+								value={username}
+								containerStyles={{ flex: 1 }}
+								onChangeText={setUsername}
+							>
+								<TextButton
+									title="Save"
+									buttonStyles={{ position: 'absolute', right: 15 }}
+									titleStyles={{ textDecorationLine: 'none' }}
+									onPress={() => user.update({ username: username })}
+								/>
+							</BaseTextInput>
 
 							<IconButton
 								iconName="trash"
-								buttonStyles={{ position: 'absolute', right: 15 }}
+								buttonStyles={{ marginTop: 25 }}
 								onPress={() => handleFieldDelete('username')}
 							/>
-						</BaseTextInput>
+						</View>
 					)}
 
 					{!phone ? (
 						<TextButton
 							title="+ Add phone"
+							buttonStyles={{ alignItems: 'flex-start' }}
+							titleStyles={{ textDecorationLine: 'none' }}
 							onPress={() => setEditingField('phone')}
 						/>
 					) : (
-						<BaseTextInput
-							label="Phone number"
-							placeholder="Enter your phone number"
-							value={phone}
-							onChangeText={setPhone}
-						>
-							<IconButton
-								iconName="save"
-								buttonStyles={{ position: 'absolute', right: 55 }}
-								onPress={() => handleFieldDelete('phone')}
-							/>
+						<View style={{ flexDirection: 'row', gap: 16 }}>
+							<BaseTextInput
+								label="Phone number"
+								placeholder="Enter your phone number"
+								value={phone}
+								containerStyles={{ flex: 1 }}
+								onChangeText={setPhone}
+							>
+								<TextButton
+									title="Save"
+									buttonStyles={{ position: 'absolute', right: 15 }}
+									titleStyles={{ textDecorationLine: 'none' }}
+									onPress={() => handleFieldDelete('phone')}
+								/>
+							</BaseTextInput>
 
 							<IconButton
 								iconName="trash"
-								buttonStyles={{ position: 'absolute', right: 15 }}
+								buttonStyles={{ marginTop: 25 }}
 								onPress={() => {
 									user.update({ unsafeMetadata: { phoneNumber: null } });
 									setPhone(''); // Clear local state
 									setEditingField(null);
 								}}
 							/>
-						</BaseTextInput>
+						</View>
 					)}
 
 					<BaseTextInput
 						label="Email"
 						value={email}
+						labelStyles={{ color: COLORS.white }}
+						containerStyles={{ marginTop: 15 }}
 						onChangeText={(val) => setEmail(val.toLowerCase())}
 					>
-						<IconButton
-							iconName="save"
+						<TextButton
+							title="Save"
 							buttonStyles={{ position: 'absolute', right: 15 }}
+							titleStyles={{ textDecorationLine: 'none' }}
 							onPress={onConfirmEmail}
 						/>
 					</BaseTextInput>
@@ -387,7 +409,7 @@ const styles = StyleSheet.create({
 	changeAvatarText: {
 		marginTop: 8,
 		color: COLORS.white,
-		fontSize: 14,
+		fontSize: 18,
 		fontWeight: '500',
 	},
 });

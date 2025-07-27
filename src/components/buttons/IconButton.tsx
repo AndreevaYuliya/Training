@@ -2,8 +2,8 @@ import { FC } from 'react';
 
 import { Pressable, StyleProp, StyleSheet, ViewStyle } from 'react-native';
 
-import COLORS from '@/src/constants/colors';
-import { FontAwesome } from '@expo/vector-icons';
+import COLORS, { COLORS2, COLORS4 } from '@/src/constants/colors';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import ArrowLeftIcon from '../../assets/icons/back.svg';
 import CloseEyeIcon from '../../assets/icons/close-eye.svg';
 import CrossIcon from '../../assets/icons/close.svg';
@@ -30,7 +30,7 @@ type IconType =
 	| 'google'
 	| 'apple'
 	| 'github'
-	| 'save'
+	| 'settings'
 	| 'trash';
 
 const IconButton: FC<Props> = (props) => {
@@ -104,19 +104,19 @@ const IconButton: FC<Props> = (props) => {
 						color={COLORS.white}
 					/>
 				);
-			case 'save':
+			case 'settings':
 				return (
-					<FontAwesome
-						name="save"
-						color={COLORS.blue}
-						size={24}
+					<Ionicons
+						name="settings-outline"
+						size={32}
+						color={COLORS.white}
 					/>
 				);
 			case 'trash':
 				return (
 					<FontAwesome
 						name="trash"
-						color={COLORS.red}
+						color={COLORS2.black}
 						size={24}
 					/>
 				);

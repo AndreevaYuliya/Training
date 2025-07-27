@@ -1,6 +1,6 @@
 import { FC, ReactNode, useState } from 'react';
 import { StyleProp, StyleSheet, Text, TextInput, TextStyle, View, ViewStyle } from 'react-native';
-import COLORS from '../constants/colors';
+import COLORS, { COLORS2, COLORS3, COLORS4 } from '../constants/colors';
 import IconButton from './buttons/IconButton';
 
 type Props = {
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
 		paddingRight: 31,
 		borderRadius: 32,
 		fontSize: 18,
-		color: COLORS.black,
+		color: COLORS2.blue,
 		backgroundColor: COLORS.white,
 	},
 
