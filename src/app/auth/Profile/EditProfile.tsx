@@ -25,20 +25,26 @@ import BaseModal from '@/src/components/BaseModal';
 import BaseTextInput from '@/src/components/BaseTextInput';
 import BaseButton from '@/src/components/buttons/BaseButton';
 import IconButton from '@/src/components/buttons/IconButton';
-import COLORS, { COLORS5 } from '@/src/constants/colors';
 import updateUserEmail from '@/src/hooks/updateUserEmail';
 import { EmailAddressResource } from '@clerk/types';
+import { MaterialIcons } from '@expo/vector-icons';
+import COLORS from '@/src/constants/colors';
+
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
+import * as ImageManipulator from 'expo-image-manipulator';
 
 const EditProfile: FC = () => {
 	const insets = useSafeAreaInsets();
 
 	const { signOut } = useClerk();
-	const { user } = useUser();
+	const { isLoaded, user } = useUser();
 
 	const bottomSheetRef = useRef<BottomSheetModalMethods>(null);
 
 	const [editingField, setEditingField] = useState<'name' | 'username' | 'phone' | null>(null);
 
+	const [image, setImage] = useState<string | null>(null);
 	const [name, setName] = useState(user?.firstName);
 	const [username, setUsername] = useState(user?.username ?? '');
 	const [email, setEmail] = useState(user?.emailAddresses[0].emailAddress ?? '');
@@ -52,7 +58,50 @@ const EditProfile: FC = () => {
 
 	const [error, setError] = useState('');
 
-	const handleChangeAvatar = () => {};
+	const handleChangeAvatar = async () => {
+		// No permissions request is necessary for launching the image library
+		let result = await ImagePicker.launchImageLibraryAsync({
+			mediaTypes: ['images', 'videos'],
+			allowsEditing: true,
+			aspect: [4, 3],
+			quality: 1,
+		});
+
+		console.log(result);
+
+		if (!result.canceled) {
+			const asset = result.assets[0]; // ✅ This defines 'asset'
+			setImage(asset.uri);
+			await uploadToClerk(asset.uri);
+		}
+	};
+
+	const uploadToClerk = async (uri: string) => {
+		if (!isLoaded || !user) return;
+
+		try {
+			// 👇 Resize and compress image to reduce size
+			const manipulatedImage = await ImageManipulator.manipulateAsync(
+				uri,
+				[{ resize: { width: 512 } }], // Resize to 512px width, keep aspect ratio
+				{ compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true },
+			);
+
+			const base64 = manipulatedImage.base64;
+			if (!base64) {
+				throw new Error('Failed to convert image to base64');
+			}
+
+			const dataUrl = `data:image/jpeg;base64,${base64}`;
+
+			await user.setProfileImage({ file: dataUrl });
+
+			Alert.alert('Success', 'Profile image updated!');
+		} catch (error) {
+			console.error('Upload failed', error);
+			Alert.alert('Error', 'Failed to upload image');
+		}
+	};
 
 	const handleSave = async () => {
 		if (!user) {
@@ -73,8 +122,13 @@ const EditProfile: FC = () => {
 				});
 			}
 			setEditingField(null);
-		} catch (err) {
-			console.error('Failed to update user:', err);
+		} catch (error: unknown) {
+			let message = 'Unknown error occurred';
+
+			if (error instanceof Error) {
+				message = error.message;
+			}
+			Alert.alert('Update Failed', message);
 		}
 	};
 
@@ -202,16 +256,51 @@ const EditProfile: FC = () => {
 							source={{ uri: user.imageUrl || undefined }}
 							style={styles.avatar}
 						/>
-						<Text style={styles.changeAvatarText}>Change avatar</Text>
+						<View
+							style={{
+								marginTop: 8,
+								flexDirection: 'row',
+								gap: 4,
+								alignItems: 'center',
+							}}
+						>
+							<Text style={styles.changeAvatarText}>Change avatar</Text>
+							<MaterialIcons
+								name="edit"
+								color={COLORS.textButton}
+								size={18}
+							/>
+						</View>
+
+						<View
+							style={{
+								backgroundColor: 'red',
+								width: 30,
+								height: 30,
+								position: 'absolute',
+								right: 5,
+								top: 5,
+							}}
+						/>
 					</TouchableOpacity>
 
 					{!name ? (
 						<TextButton
 							title="+ Add name"
-							buttonStyles={{ alignItems: 'flex-start' }}
+							buttonStyles={{
+								alignItems: 'center',
+								flexDirection: 'row',
+								gap: 4,
+							}}
 							titleStyles={{ textDecorationLine: 'none' }}
 							onPress={() => setEditingField('name')}
-						/>
+						>
+							<MaterialIcons
+								name="edit"
+								color={COLORS.textButton}
+								size={18}
+							/>
+						</TextButton>
 					) : (
 						<View style={{ flexDirection: 'row', gap: 16 }}>
 							<BaseTextInput
@@ -237,14 +326,7 @@ const EditProfile: FC = () => {
 						</View>
 					)}
 
-					{!username ? (
-						<TextButton
-							title="+ Add username"
-							buttonStyles={{ alignItems: 'flex-start' }}
-							titleStyles={{ textDecorationLine: 'none' }}
-							onPress={() => setEditingField('username')}
-						/>
-					) : (
+					{username && (
 						<View style={{ flexDirection: 'row', gap: 16 }}>
 							<BaseTextInput
 								label="Username"
@@ -272,10 +354,20 @@ const EditProfile: FC = () => {
 					{!phone ? (
 						<TextButton
 							title="+ Add phone"
-							buttonStyles={{ alignItems: 'flex-start' }}
+							buttonStyles={{
+								alignItems: 'center',
+								flexDirection: 'row',
+								gap: 4,
+							}}
 							titleStyles={{ textDecorationLine: 'none' }}
 							onPress={() => setEditingField('phone')}
-						/>
+						>
+							<MaterialIcons
+								name="edit"
+								color={COLORS.textButton}
+								size={18}
+							/>
+						</TextButton>
 					) : (
 						<View style={{ flexDirection: 'row', gap: 16 }}>
 							<BaseTextInput
@@ -319,6 +411,25 @@ const EditProfile: FC = () => {
 							onPress={onConfirmEmail}
 						/>
 					</BaseTextInput>
+
+					{!username && (
+						<TextButton
+							title="+ Add username"
+							buttonStyles={{
+								alignItems: 'center',
+								flexDirection: 'row',
+								gap: 4,
+							}}
+							titleStyles={{ textDecorationLine: 'none' }}
+							onPress={() => setEditingField('username')}
+						>
+							<MaterialIcons
+								name="edit"
+								color={COLORS.textButton}
+								size={18}
+							/>
+						</TextButton>
+					)}
 				</View>
 			</TouchableWithoutFeedback>
 
@@ -393,10 +504,11 @@ const EditProfile: FC = () => {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: COLORS5.background,
+		backgroundColor: COLORS.background,
 	},
 
 	avatarWrapper: {
+		alignSelf: 'center',
 		alignItems: 'center',
 		marginBottom: 24,
 	},
@@ -407,8 +519,8 @@ const styles = StyleSheet.create({
 		backgroundColor: '#ccc',
 	},
 	changeAvatarText: {
-		marginTop: 8,
-		color: COLORS.white,
+		// marginTop: 8,
+		color: COLORS.textButton,
 		fontSize: 18,
 		fontWeight: '500',
 	},

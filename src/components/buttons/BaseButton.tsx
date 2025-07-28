@@ -1,4 +1,4 @@
-import { COLORS5 } from '@/src/constants/colors';
+import COLORS from '@/src/constants/colors';
 import React, { FC, ReactNode } from 'react';
 
 import { Pressable, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
@@ -53,12 +53,12 @@ const styles = StyleSheet.create({
 		borderRadius: 32,
 		justifyContent: 'center',
 		alignSelf: 'stretch',
-		backgroundColor: COLORS5.baseButtonBGC,
+		backgroundColor: COLORS.baseButtonBGC,
 	},
 
 	buttonTitle: {
 		fontSize: 22,
-		color: COLORS5.baseButtonText,
+		color: COLORS.white,
 		textAlign: 'center',
 	},
 });

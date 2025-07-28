@@ -10,7 +10,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { tokenCache } from '@clerk/clerk-expo/token-cache';
 
 import * as WebBrowser from 'expo-web-browser';
-import { COLORS5 } from '../constants/colors';
+import COLORS from '../constants/colors';
 WebBrowser.maybeCompleteAuthSession();
 
 export default function RootLayout() {
@@ -61,6 +61,6 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: COLORS5.background,
+		backgroundColor: COLORS.background,
 	},
 });

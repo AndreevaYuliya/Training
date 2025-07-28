@@ -1,6 +1,6 @@
 import { FC, ReactNode, useState } from 'react';
 import { StyleProp, StyleSheet, Text, TextInput, TextStyle, View, ViewStyle } from 'react-native';
-import COLORS, { COLORS5 } from '../constants/colors';
+import COLORS from '../constants/colors';
 import IconButton from './buttons/IconButton';
 
 type Props = {
@@ -97,8 +97,8 @@ const styles = StyleSheet.create({
 		paddingRight: 31,
 		borderRadius: 32,
 		fontSize: 18,
-		color: COLORS5.inputText,
-		backgroundColor: COLORS5.inputBGC,
+		color: COLORS.black,
+		backgroundColor: COLORS.white,
 	},
 
 	inputIcon: {

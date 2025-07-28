@@ -20,7 +20,7 @@ const BaseModal: FC<Props> = (props) => {
 	return (
 		<Modal
 			visible={visible}
-			animationType="slide"
+			animationType="fade"
 			transparent
 			onRequestClose={onCancel}
 		>

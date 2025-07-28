@@ -326,7 +326,7 @@ const Form: FC = () => {
 						<IconButton
 							iconName="google"
 							buttonStyles={{
-								backgroundColor: COLORS.blue,
+								backgroundColor: COLORS.white,
 								opacity: 0.6,
 								height: 60,
 								width: 85,
@@ -340,7 +340,7 @@ const Form: FC = () => {
 						<IconButton
 							iconName="apple"
 							buttonStyles={{
-								backgroundColor: COLORS.blue,
+								backgroundColor: COLORS.white,
 								opacity: 0.6,
 								height: 60,
 								width: 85,
@@ -354,8 +354,8 @@ const Form: FC = () => {
 						<IconButton
 							iconName="github"
 							buttonStyles={{
-								backgroundColor: COLORS.blue,
-								opacity: 0.6,
+								backgroundColor: COLORS.white,
+								opacity: 0.2,
 								height: 60,
 								width: 85,
 								borderRadius: 35,

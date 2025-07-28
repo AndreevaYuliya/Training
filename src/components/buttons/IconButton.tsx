@@ -2,11 +2,12 @@ import { FC } from 'react';
 
 import { Pressable, StyleProp, StyleSheet, ViewStyle } from 'react-native';
 
-import COLORS, { COLORS5 } from '@/src/constants/colors';
-import { FontAwesome, Ionicons } from '@expo/vector-icons';
+import COLORS from '@/src/constants/colors';
+import { FontAwesome, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import ArrowLeftIcon from '../../assets/icons/back.svg';
 import CloseEyeIcon from '../../assets/icons/close-eye.svg';
 import CrossIcon from '../../assets/icons/close.svg';
+import GoogleIcon from '../../assets/icons/google.svg';
 import Eye from '../../assets/icons/eye.svg';
 import ProfileIcon from '../../assets/icons/profile.svg';
 import TouchIdIcon from '../../assets/icons/touch-id.svg';
@@ -31,6 +32,7 @@ type IconType =
 	| 'apple'
 	| 'github'
 	| 'settings'
+	| 'edit'
 	| 'trash';
 
 const IconButton: FC<Props> = (props) => {
@@ -82,10 +84,9 @@ const IconButton: FC<Props> = (props) => {
 				);
 			case 'google':
 				return (
-					<FontAwesome
-						name="google"
-						size={32}
-						color={COLORS.white}
+					<GoogleIcon
+						width={32}
+						height={32}
 					/>
 				);
 			case 'apple':
@@ -93,7 +94,7 @@ const IconButton: FC<Props> = (props) => {
 					<FontAwesome
 						name="apple"
 						size={32}
-						color={COLORS.white}
+						color={COLORS.black}
 					/>
 				);
 			case 'github':
@@ -101,7 +102,7 @@ const IconButton: FC<Props> = (props) => {
 					<FontAwesome
 						name="github"
 						size={32}
-						color={COLORS.white}
+						color={COLORS.black}
 					/>
 				);
 			case 'settings':
@@ -114,9 +115,17 @@ const IconButton: FC<Props> = (props) => {
 				);
 			case 'trash':
 				return (
-					<FontAwesome
+					<Ionicons
 						name="trash"
-						color={COLORS5.icon}
+						color={COLORS.white}
+						size={24}
+					/>
+				);
+			case 'edit':
+				return (
+					<MaterialIcons
+						name="edit"
+						color={COLORS.white}
 						size={24}
 					/>
 				);
