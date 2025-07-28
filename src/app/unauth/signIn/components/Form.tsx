@@ -392,7 +392,6 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		paddingTop: 24,
-		paddingBottom: 32,
 		marginHorizontal: 32,
 		justifyContent: 'space-between',
 		gap: 48,

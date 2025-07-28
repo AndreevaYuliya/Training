@@ -5,17 +5,28 @@ import { useEffect } from 'react';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
 
 import { tokenCache } from '@clerk/clerk-expo/token-cache';
 
 import * as WebBrowser from 'expo-web-browser';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import COLORS from '../constants/colors';
 WebBrowser.maybeCompleteAuthSession();
 
 export default function RootLayout() {
+	const insets = useSafeAreaInsets();
+
 	return (
-		<GestureHandlerRootView style={styles.container}>
+		<GestureHandlerRootView
+			style={[
+				styles.container,
+				{
+					paddingTop: Platform.OS === 'ios' ? insets.top : 32,
+					paddingBottom: Platform.OS === 'ios' ? insets.top : 32,
+				},
+			]}
+		>
 			<ClerkProvider
 				publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY}
 				tokenCache={tokenCache}

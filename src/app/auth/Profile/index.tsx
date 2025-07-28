@@ -1,6 +1,5 @@
-import React, { FC, useRef, useState } from 'react';
+import React, { FC } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { router } from 'expo-router';
 
@@ -8,39 +7,27 @@ import { useClerk, useUser } from '@clerk/clerk-expo';
 
 import Header from '@/src/components/Header';
 
-import { BottomSheetModalMethods } from '@/src/components/BaseBottomSheetModal';
 import BaseButton from '@/src/components/buttons/BaseButton';
 import IconButton from '@/src/components/buttons/IconButton';
 import COLORS from '@/src/constants/colors';
 
 const Profile: FC = () => {
-	const insets = useSafeAreaInsets();
-
 	const { signOut } = useClerk();
 	const { user } = useUser();
-
-	const bottomSheetRef = useRef<BottomSheetModalMethods>(null);
-
-	// const [emailToVerify, setEmailToVerify] = useState<EmailAddressResource | null>(null);
-	// const [verificationCode, setVerificationCode] = useState('');
-
-	const [name, setName] = useState(user?.firstName ?? '');
-	const [username, setUserame] = useState(user?.username ?? '');
-	const [email, setEmail] = useState(user?.emailAddresses[0].emailAddress ?? '');
 
 	if (!user) {
 		return null;
 	}
 
 	return (
-		<View style={[styles.container, { paddingTop: insets.top }]}>
+		<View style={[styles.container]}>
 			<Header
 				backButton
 				title="Profile"
 			>
 				<IconButton
 					iconName="settings"
-					onPress={() => router.push('/auth/Profile/EditProfile')}
+					onPress={() => router.push('/auth/Profile/editAccount/EditProfile')}
 				/>
 			</Header>
 
@@ -57,7 +44,7 @@ const Profile: FC = () => {
 				/>
 				{user.firstName && (
 					<Text style={{ fontSize: 28, fontWeight: 500, color: COLORS.white }}>
-						{name}
+						{user.firstName}
 					</Text>
 				)}
 
@@ -80,7 +67,7 @@ const Profile: FC = () => {
 
 			<BaseButton
 				title="Logout"
-				containerStyles={{ marginHorizontal: 32, marginBottom: 32 }}
+				containerStyles={{ marginHorizontal: 32 }}
 				buttonStyles={{
 					padding: 15,
 				}}

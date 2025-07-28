@@ -1,21 +1,21 @@
 // EditFieldModal.tsx
 import React, { FC } from 'react';
-import { Modal, StyleSheet, View } from 'react-native';
-import COLORS from '../constants/colors';
-import BaseTextInput from './BaseTextInput';
-import BaseButton from './buttons/BaseButton';
+import { Modal, StyleSheet, Text, View } from 'react-native';
+import COLORS from '../../constants/colors';
+import BaseTextInput from '../BaseTextInput';
+import BaseButton from '../buttons/BaseButton';
 
 type Props = {
 	visible: boolean;
 	label: string;
 	placeholder: string;
 	value: string;
-	onChange: (val: string) => void;
+	onChange?: (val: string) => void;
 	onCancel: () => void;
 	onSave: () => void;
 };
 
-const BaseModal: FC<Props> = (props) => {
+const EditingModal: FC<Props> = (props) => {
 	const { visible, label, placeholder, value, onChange, onCancel, onSave } = props;
 	return (
 		<Modal
@@ -26,27 +26,24 @@ const BaseModal: FC<Props> = (props) => {
 		>
 			<View style={styles.modalContainer}>
 				<View style={styles.modalContent}>
+					<Text style={styles.title}>{label}</Text>
+
 					<BaseTextInput
-						label={label}
 						placeholder={placeholder}
 						value={value}
-						onChangeText={onChange}
+						onChangeText={onChange ?? (() => {})}
 					/>
-					<View
-						style={{
-							flexDirection: 'row',
-							marginTop: 16,
-							justifyContent: 'space-between',
-						}}
-					>
+
+					<View style={styles.buttonsContainer}>
 						<BaseButton
 							title="Save"
-							buttonStyles={{ padding: 24 }}
+							buttonStyles={styles.padding}
 							onPress={onSave}
 						/>
+
 						<BaseButton
 							title="Cancel"
-							buttonStyles={{ padding: 24 }}
+							buttonStyles={styles.padding}
 							onPress={onCancel}
 						/>
 					</View>
@@ -56,7 +53,7 @@ const BaseModal: FC<Props> = (props) => {
 	);
 };
 
-export default BaseModal;
+export default EditingModal;
 
 const styles = StyleSheet.create({
 	modalContainer: {
@@ -65,10 +62,34 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		backgroundColor: COLORS.transparent,
 	},
+
 	modalContent: {
-		backgroundColor: COLORS.background,
 		padding: 20,
-		borderRadius: 12,
 		width: '80%',
+		borderRadius: 12,
+		backgroundColor: COLORS.background,
+	},
+
+	title: {
+		marginBottom: 12,
+		fontSize: 18,
+		fontWeight: 'bold',
+		color: COLORS.white,
+	},
+
+	message: {
+		fontSize: 16,
+		marginBottom: 20,
+		color: COLORS.white,
+	},
+
+	buttonsContainer: {
+		flexDirection: 'row',
+		marginTop: 16,
+		justifyContent: 'space-between',
+	},
+
+	padding: {
+		padding: 24,
 	},
 });

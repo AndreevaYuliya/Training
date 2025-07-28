@@ -1,4 +1,4 @@
-import React, { FC, useRef, useState } from 'react';
+import { FC, useRef, useState } from 'react';
 import {
 	Alert,
 	Image,
@@ -9,40 +9,37 @@ import {
 	TouchableWithoutFeedback,
 	View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { router } from 'expo-router';
+import { useUser } from '@clerk/clerk-expo';
 
-import { useClerk, useUser } from '@clerk/clerk-expo';
-
-import Header from '@/src/components/Header';
 import TextButton from '@/src/components/buttons/TextButton';
 
 import BaseBottomSheetModal, {
 	BottomSheetModalMethods,
 } from '@/src/components/BaseBottomSheetModal';
-import BaseModal from '@/src/components/BaseModal';
 import BaseTextInput from '@/src/components/BaseTextInput';
 import BaseButton from '@/src/components/buttons/BaseButton';
 import IconButton from '@/src/components/buttons/IconButton';
+import COLORS from '@/src/constants/colors';
 import updateUserEmail from '@/src/hooks/updateUserEmail';
 import { EmailAddressResource } from '@clerk/types';
 import { MaterialIcons } from '@expo/vector-icons';
-import COLORS from '@/src/constants/colors';
 
-import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
-import * as ImageManipulator from 'expo-image-manipulator';
+import Header from '@/src/components/Header';
+import ConfirmationModal from '@/src/components/modals/ConfirmationModal';
+import EditingModal from '@/src/components/modals/EditingModal';
+import React from 'react';
+import useChangeAvatar from './helpers/handleChangeAvatar';
+import useFieldDelete from './helpers/useFieldDelete';
 
-const EditProfile: FC = () => {
-	const insets = useSafeAreaInsets();
-
-	const { signOut } = useClerk();
+const EditAccount: FC = () => {
 	const { isLoaded, user } = useUser();
 
 	const bottomSheetRef = useRef<BottomSheetModalMethods>(null);
 
-	const [editingField, setEditingField] = useState<'name' | 'username' | 'phone' | null>(null);
+	const [editingField, setEditingField] = useState<
+		'avatar' | 'name' | 'username' | 'phone' | 'account' | null
+	>(null);
 
 	const [image, setImage] = useState<string | null>(null);
 	const [name, setName] = useState(user?.firstName);
@@ -58,50 +55,16 @@ const EditProfile: FC = () => {
 
 	const [error, setError] = useState('');
 
-	const handleChangeAvatar = async () => {
-		// No permissions request is necessary for launching the image library
-		let result = await ImagePicker.launchImageLibraryAsync({
-			mediaTypes: ['images', 'videos'],
-			allowsEditing: true,
-			aspect: [4, 3],
-			quality: 1,
-		});
+	const { handleChangeAvatar } = useChangeAvatar(setImage);
 
-		console.log(result);
-
-		if (!result.canceled) {
-			const asset = result.assets[0]; // ✅ This defines 'asset'
-			setImage(asset.uri);
-			await uploadToClerk(asset.uri);
-		}
-	};
-
-	const uploadToClerk = async (uri: string) => {
-		if (!isLoaded || !user) return;
-
-		try {
-			// 👇 Resize and compress image to reduce size
-			const manipulatedImage = await ImageManipulator.manipulateAsync(
-				uri,
-				[{ resize: { width: 512 } }], // Resize to 512px width, keep aspect ratio
-				{ compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true },
-			);
-
-			const base64 = manipulatedImage.base64;
-			if (!base64) {
-				throw new Error('Failed to convert image to base64');
-			}
-
-			const dataUrl = `data:image/jpeg;base64,${base64}`;
-
-			await user.setProfileImage({ file: dataUrl });
-
-			Alert.alert('Success', 'Profile image updated!');
-		} catch (error) {
-			console.error('Upload failed', error);
-			Alert.alert('Error', 'Failed to upload image');
-		}
-	};
+	// Use your custom hook for deleting fields
+	const {
+		fieldToDelete,
+		setFieldToDelete,
+		showFieldDeleteModal,
+		setShowFieldDeleteModal,
+		confirmFieldDelete,
+	} = useFieldDelete(setImage, setName, setUsername, setPhone, setEditingField);
 
 	const handleSave = async () => {
 		if (!user) {
@@ -121,6 +84,7 @@ const EditProfile: FC = () => {
 					},
 				});
 			}
+
 			setEditingField(null);
 		} catch (error: unknown) {
 			let message = 'Unknown error occurred';
@@ -173,68 +137,12 @@ const EditProfile: FC = () => {
 		}
 	};
 
-	const handleFieldDelete = (field: 'name' | 'username' | 'phone') => {
-		if (!user) {
-			return;
-		}
-
-		Alert.alert(`Delete ${field}`, `Are you sure you want to delete your ${field}?`, [
-			{
-				text: 'Delete',
-				style: 'destructive',
-				onPress: async () => {
-					try {
-						if (field === 'name') {
-							await user.update({ firstName: '' });
-							setName('');
-						} else if (field === 'username') {
-							await user.update({ username: '' });
-							setUsername('');
-						} else if (field === 'phone') {
-							await user.update({ unsafeMetadata: { phoneNumber: phone } });
-							setPhone('');
-						}
-
-						setEditingField(null);
-					} catch (err) {
-						console.error(`Failed to delete ${field}`, err);
-					}
-				},
-			},
-
-			{ text: 'Cancel', style: 'cancel' },
-		]);
-	};
-
-	const handleDeleteProfile = async () => {
-		if (!user) {
-			return;
-		}
-
-		Alert.alert('Delete account', 'Are you sure you want to delete your account?', [
-			{
-				text: 'Delete',
-				style: 'destructive',
-				onPress: async () => {
-					try {
-						await user.delete(); // Deletes the user
-						await signOut(); // Clears local session/cache if still present
-						router.replace('/unauth/signIn');
-					} catch (error) {
-						console.error('Failed to delete profile:', error);
-					}
-				},
-			},
-			{ text: 'Cancel', style: 'cancel' },
-		]);
-	};
-
 	if (!user) {
 		return null;
 	}
 
 	return (
-		<View style={[styles.container, { paddingTop: insets.top }]}>
+		<View style={[styles.container]}>
 			<Header
 				backButton
 				title="Edit Profile"
@@ -272,14 +180,16 @@ const EditProfile: FC = () => {
 							/>
 						</View>
 
-						<View
-							style={{
-								backgroundColor: 'red',
-								width: 30,
-								height: 30,
+						<IconButton
+							iconName="cross"
+							buttonStyles={{
 								position: 'absolute',
-								right: 5,
-								top: 5,
+								right: 8,
+								top: 8,
+							}}
+							onPress={() => {
+								setFieldToDelete('avatar');
+								setShowFieldDeleteModal(true);
 							}}
 						/>
 					</TouchableOpacity>
@@ -321,7 +231,10 @@ const EditProfile: FC = () => {
 							<IconButton
 								iconName="trash"
 								buttonStyles={{ marginTop: 25 }}
-								onPress={() => handleFieldDelete('name')}
+								onPress={() => {
+									setFieldToDelete('name');
+									setShowFieldDeleteModal(true);
+								}}
 							/>
 						</View>
 					)}
@@ -346,7 +259,10 @@ const EditProfile: FC = () => {
 							<IconButton
 								iconName="trash"
 								buttonStyles={{ marginTop: 25 }}
-								onPress={() => handleFieldDelete('username')}
+								onPress={() => {
+									setFieldToDelete('username');
+									setShowFieldDeleteModal(true);
+								}}
 							/>
 						</View>
 					)}
@@ -381,7 +297,10 @@ const EditProfile: FC = () => {
 									title="Save"
 									buttonStyles={{ position: 'absolute', right: 15 }}
 									titleStyles={{ textDecorationLine: 'none' }}
-									onPress={() => handleFieldDelete('phone')}
+									onPress={() => {
+										setFieldToDelete('phone');
+										setShowFieldDeleteModal(true);
+									}}
 								/>
 							</BaseTextInput>
 
@@ -433,8 +352,21 @@ const EditProfile: FC = () => {
 				</View>
 			</TouchableWithoutFeedback>
 
+			<ConfirmationModal
+				visible={showFieldDeleteModal}
+				title={`Delete ${fieldToDelete}`}
+				message={`Are you sure you want to delete your ${fieldToDelete}?`}
+				onCancel={() => {
+					setShowFieldDeleteModal(false);
+					setFieldToDelete(null);
+				}}
+				onConfirm={async () => {
+					await confirmFieldDelete();
+				}}
+			/>
+
 			{/* Edit Modal */}
-			<BaseModal
+			<EditingModal
 				visible={editingField !== null}
 				label={
 					editingField === 'name'
@@ -468,22 +400,14 @@ const EditProfile: FC = () => {
 				onCancel={() => setEditingField(null)}
 			/>
 
-			<BaseBottomSheetModal
-				ref={bottomSheetRef}
-				setVerificationCode={setVerificationCode}
-				emailToVerify={emailToVerify}
-				onSuccess={() => {
-					setEmailToVerify(null);
-					setVerificationCode('');
-				}}
-				onPress={handleVerifyEmail}
-			/>
-
 			<BaseButton
 				title="Delete profile"
-				containerStyles={{ marginHorizontal: 32, marginBottom: 32 }}
+				containerStyles={{ marginHorizontal: 32 }}
 				buttonStyles={{ padding: 15 }}
-				onPress={handleDeleteProfile}
+				onPress={() => {
+					setFieldToDelete('account');
+					setShowFieldDeleteModal(true);
+				}}
 			/>
 
 			<BaseBottomSheetModal
@@ -495,7 +419,7 @@ const EditProfile: FC = () => {
 					setEmailToVerify(null);
 					setVerificationCode('');
 				}}
-				onPress={handleVerifyEmail} // <- вот здесь передаём функцию верификации
+				onPress={handleVerifyEmail}
 			/>
 		</View>
 	);
@@ -512,18 +436,19 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		marginBottom: 24,
 	},
+
 	avatar: {
 		width: 140,
 		height: 140,
 		borderRadius: 70,
 		backgroundColor: '#ccc',
 	},
+
 	changeAvatarText: {
-		// marginTop: 8,
 		color: COLORS.textButton,
 		fontSize: 18,
 		fontWeight: '500',
 	},
 });
 
-export default EditProfile;
+export default EditAccount;

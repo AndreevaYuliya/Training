@@ -1,39 +1,34 @@
-import { FC } from "react";
+import { FC } from 'react';
 
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View } from 'react-native';
 
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import Header from "@/src/components/Header";
+import Header from '@/src/components/Header';
 
-import COLORS from "@/src/constants/colors";
-import Form from "./components/Form";
+import COLORS from '@/src/constants/colors';
+import Form from './components/Form';
 
 const SignUp: FC = () => {
-  const insets = useSafeAreaInsets();
+	const insets = useSafeAreaInsets();
 
-  return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingTop: insets.top,
-          paddingBottom: insets.bottom,
-        },
-      ]}
-    >
-      <Header backButton title="Sign Up" />
+	return (
+		<View style={[styles.container]}>
+			<Header
+				backButton
+				title="Sign Up"
+			/>
 
-      <Form />
-    </View>
-  );
+			<Form />
+		</View>
+	);
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
+	container: {
+		flex: 1,
+		backgroundColor: COLORS.background,
+	},
 });
 
 export default SignUp;
