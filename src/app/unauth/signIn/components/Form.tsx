@@ -247,6 +247,7 @@ const Form: FC = () => {
 							</Text>
 							<TextButton
 								title="Reset"
+								titleStyles={{ textDecorationLine: 'underline' }}
 								onPress={() =>
 									router.navigate('/unauth/signIn/components/ResetPasswordForm')
 								}
@@ -379,6 +380,7 @@ const Form: FC = () => {
 						</Text>
 						<TextButton
 							title="Sign up"
+							titleStyles={{ textDecorationLine: 'underline' }}
 							onPress={() => router.navigate('/unauth/signUp')}
 						/>
 					</View>

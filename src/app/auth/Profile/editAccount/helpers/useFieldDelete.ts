@@ -3,15 +3,13 @@ import { useClerk, useUser } from '@clerk/clerk-expo';
 import { router } from 'expo-router';
 import { useState } from 'react';
 
+import { ProfileFormState } from './useProfileFormState';
+
 type Field = 'avatar' | 'name' | 'username' | 'phone' | 'account' | null;
 
-const useFieldDelete = (
-	setImage: (val: null) => void,
-	setName: (val: string) => void,
-	setUsername: (val: string) => void,
-	setPhone: (val: string) => void,
-	setEditingField: (val: Field) => void
-) => {
+const useFieldDelete = (profileForm: ProfileFormState) => {
+	const { setImage, setName, setUsername, setPhone, setEditingField } = profileForm;
+
 	const { signOut } = useClerk();
 
 	const { user } = useUser();
@@ -33,11 +31,11 @@ const useFieldDelete = (
 				await user.update({ username: '' });
 				setUsername('');
 			} else if (fieldToDelete === 'phone') {
-				await user.update({ unsafeMetadata: { ...user.unsafeMetadata, phoneNumber: '' } });
+				user.update({ unsafeMetadata: { phoneNumber: null } });
 				setPhone('');
 			} else if (fieldToDelete === 'account') {
-				await user.delete(); 
-				await signOut(); 
+				await user.delete();
+				await signOut();
 
 				router.replace('/unauth/signIn');
 			}

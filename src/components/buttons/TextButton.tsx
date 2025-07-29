@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
 		fontWeight: 500,
 		color: COLORS.textButton,
 		textAlign: 'center',
-		textDecorationLine: 'underline',
+		// textDecorationLine: 'underline',
 	},
 });
 

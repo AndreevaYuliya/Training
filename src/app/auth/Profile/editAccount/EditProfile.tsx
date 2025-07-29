@@ -1,6 +1,5 @@
-import { FC, useRef, useState } from 'react';
+import { FC, useRef } from 'react';
 import {
-	Alert,
 	Image,
 	Keyboard,
 	StyleSheet,
@@ -21,41 +20,47 @@ import BaseTextInput from '@/src/components/BaseTextInput';
 import BaseButton from '@/src/components/buttons/BaseButton';
 import IconButton from '@/src/components/buttons/IconButton';
 import COLORS from '@/src/constants/colors';
-import updateUserEmail from '@/src/hooks/updateUserEmail';
-import { EmailAddressResource } from '@clerk/types';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import Header from '@/src/components/Header';
 import ConfirmationModal from '@/src/components/modals/ConfirmationModal';
 import EditingModal from '@/src/components/modals/EditingModal';
 import React from 'react';
-import useChangeAvatar from './helpers/handleChangeAvatar';
+import useChangeAvatar from './helpers/changeAvatar';
 import useFieldDelete from './helpers/useFieldDelete';
+import updateProfile from './helpers/editProfile';
+import useProfileFormState from './helpers/useProfileFormState';
+import updateEmail from './helpers/updateEmail';
 
 const EditAccount: FC = () => {
-	const { isLoaded, user } = useUser();
+	const profileForm = useProfileFormState();
+
+	const {
+		image,
+		name,
+		setName,
+		username,
+		setUsername,
+		email,
+		setEmail,
+		phone,
+		setPhone,
+		emailToVerify,
+		setEmailToVerify,
+		setVerificationCode,
+		editingField,
+		setEditingField,
+	} = profileForm;
+
+	const { onConfirmEmail, handleVerifyEmail } = updateEmail();
+
+	const { handleEditProfile } = updateProfile(profileForm);
+
+	const { user } = useUser();
 
 	const bottomSheetRef = useRef<BottomSheetModalMethods>(null);
 
-	const [editingField, setEditingField] = useState<
-		'avatar' | 'name' | 'username' | 'phone' | 'account' | null
-	>(null);
-
-	const [image, setImage] = useState<string | null>(null);
-	const [name, setName] = useState(user?.firstName);
-	const [username, setUsername] = useState(user?.username ?? '');
-	const [email, setEmail] = useState(user?.emailAddresses[0].emailAddress ?? '');
-	const [phone, setPhone] = useState(
-		user?.unsafeMetadata?.phoneNumber ? user?.unsafeMetadata?.phoneNumber.toString() : '',
-	);
-
-	const [emailToVerify, setEmailToVerify] = useState<EmailAddressResource | null>(null);
-	const [verificationCode, setVerificationCode] = useState('');
-	const [pendingVerification, setPendingVerification] = useState(false);
-
-	const [error, setError] = useState('');
-
-	const { handleChangeAvatar } = useChangeAvatar(setImage);
+	const { handleChangeAvatar } = useChangeAvatar();
 
 	// Use your custom hook for deleting fields
 	const {
@@ -64,78 +69,7 @@ const EditAccount: FC = () => {
 		showFieldDeleteModal,
 		setShowFieldDeleteModal,
 		confirmFieldDelete,
-	} = useFieldDelete(setImage, setName, setUsername, setPhone, setEditingField);
-
-	const handleSave = async () => {
-		if (!user) {
-			return;
-		}
-
-		try {
-			if (editingField === 'name') {
-				await user.update({ firstName: name });
-			} else if (editingField === 'username') {
-				await user.update({ username });
-			} else if (editingField === 'phone') {
-				await user.update({
-					unsafeMetadata: {
-						...user.unsafeMetadata,
-						phoneNumber: phone,
-					},
-				});
-			}
-
-			setEditingField(null);
-		} catch (error: unknown) {
-			let message = 'Unknown error occurred';
-
-			if (error instanceof Error) {
-				message = error.message;
-			}
-			Alert.alert('Update Failed', message);
-		}
-	};
-
-	const onConfirmEmail = async () => {
-		if (!user) {
-			return;
-		}
-
-		try {
-			const newEmailObj = await updateUserEmail(user, email);
-			if (newEmailObj) {
-				setEmailToVerify(newEmailObj);
-				setPendingVerification(true);
-				bottomSheetRef.current?.show('changeEmail');
-			}
-		} catch (err: any) {
-			console.error('Failed to send verification code:', err);
-			setError(err.errors?.[0]?.message || 'Something went wrong');
-		}
-	};
-
-	const handleVerifyEmail = async () => {
-		if (!user || !emailToVerify || !verificationCode) {
-			return;
-		}
-
-		try {
-			await emailToVerify.attemptVerification({ code: verificationCode });
-			await user.update({ primaryEmailAddressId: emailToVerify.id });
-
-			// Delete old emails
-			for (const e of user.emailAddresses.filter((e) => e.id !== emailToVerify.id)) {
-				await e.destroy();
-			}
-
-			setPendingVerification(false);
-			setEmailToVerify(null);
-			bottomSheetRef.current?.close();
-		} catch (err: any) {
-			console.error('Verification error:', err);
-			setError(err.errors?.[0]?.message || 'Invalid code');
-		}
-	};
+	} = useFieldDelete(profileForm);
 
 	if (!user) {
 		return null;
@@ -194,24 +128,7 @@ const EditAccount: FC = () => {
 						/>
 					</TouchableOpacity>
 
-					{!name ? (
-						<TextButton
-							title="+ Add name"
-							buttonStyles={{
-								alignItems: 'center',
-								flexDirection: 'row',
-								gap: 4,
-							}}
-							titleStyles={{ textDecorationLine: 'none' }}
-							onPress={() => setEditingField('name')}
-						>
-							<MaterialIcons
-								name="edit"
-								color={COLORS.textButton}
-								size={18}
-							/>
-						</TextButton>
-					) : (
+					{name && (
 						<View style={{ flexDirection: 'row', gap: 16 }}>
 							<BaseTextInput
 								label="Name"
@@ -267,24 +184,7 @@ const EditAccount: FC = () => {
 						</View>
 					)}
 
-					{!phone ? (
-						<TextButton
-							title="+ Add phone"
-							buttonStyles={{
-								alignItems: 'center',
-								flexDirection: 'row',
-								gap: 4,
-							}}
-							titleStyles={{ textDecorationLine: 'none' }}
-							onPress={() => setEditingField('phone')}
-						>
-							<MaterialIcons
-								name="edit"
-								color={COLORS.textButton}
-								size={18}
-							/>
-						</TextButton>
-					) : (
+					{phone && (
 						<View style={{ flexDirection: 'row', gap: 16 }}>
 							<BaseTextInput
 								label="Phone number"
@@ -298,8 +198,7 @@ const EditAccount: FC = () => {
 									buttonStyles={{ position: 'absolute', right: 15 }}
 									titleStyles={{ textDecorationLine: 'none' }}
 									onPress={() => {
-										setFieldToDelete('phone');
-										setShowFieldDeleteModal(true);
+										user.update({ unsafeMetadata: { phoneNumber: phone } });
 									}}
 								/>
 							</BaseTextInput>
@@ -308,9 +207,8 @@ const EditAccount: FC = () => {
 								iconName="trash"
 								buttonStyles={{ marginTop: 25 }}
 								onPress={() => {
-									user.update({ unsafeMetadata: { phoneNumber: null } });
-									setPhone(''); // Clear local state
-									setEditingField(null);
+									setFieldToDelete('phone');
+									setShowFieldDeleteModal(true);
 								}}
 							/>
 						</View>
@@ -331,6 +229,24 @@ const EditAccount: FC = () => {
 						/>
 					</BaseTextInput>
 
+					{!name && (
+						<TextButton
+							title="+ Add name"
+							buttonStyles={{
+								alignItems: 'center',
+								flexDirection: 'row',
+								gap: 4,
+							}}
+							onPress={() => setEditingField('name')}
+						>
+							<MaterialIcons
+								name="edit"
+								color={COLORS.textButton}
+								size={18}
+							/>
+						</TextButton>
+					)}
+
 					{!username && (
 						<TextButton
 							title="+ Add username"
@@ -339,8 +255,25 @@ const EditAccount: FC = () => {
 								flexDirection: 'row',
 								gap: 4,
 							}}
-							titleStyles={{ textDecorationLine: 'none' }}
 							onPress={() => setEditingField('username')}
+						>
+							<MaterialIcons
+								name="edit"
+								color={COLORS.textButton}
+								size={18}
+							/>
+						</TextButton>
+					)}
+
+					{!phone && (
+						<TextButton
+							title="+ Add phone"
+							buttonStyles={{
+								alignItems: 'center',
+								flexDirection: 'row',
+								gap: 4,
+							}}
+							onPress={() => setEditingField('phone')}
 						>
 							<MaterialIcons
 								name="edit"
@@ -396,8 +329,16 @@ const EditAccount: FC = () => {
 							? setUsername
 							: setPhone
 				}
-				onSave={handleSave}
+				onSave={handleEditProfile}
 				onCancel={() => setEditingField(null)}
+			/>
+
+			<TextButton
+				title="Change password"
+				buttonStyles={{ padding: 15 }}
+				onPress={() => {
+					null;
+				}}
 			/>
 
 			<BaseButton
