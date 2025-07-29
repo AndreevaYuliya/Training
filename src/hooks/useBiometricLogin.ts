@@ -43,6 +43,7 @@ export function useBiometricLogin() {
         throw new Error("Данные для входа не найдены");
       }
 
+
       await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
     } catch (e: any) {
       console.error("Ошибка биометрии:", e.message);

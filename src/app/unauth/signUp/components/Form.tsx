@@ -1,7 +1,8 @@
 import BaseTextInput from '@/src/components/BaseTextInput';
 import BaseButton from '@/src/components/buttons/BaseButton';
 import Header from '@/src/components/Header';
-import { useSignUp, useUser } from '@clerk/clerk-expo';
+import { useSignUp } from '@clerk/clerk-expo';
+
 import { FC, useRef, useState } from 'react';
 import {
 	Keyboard,
@@ -12,12 +13,16 @@ import {
 	View,
 } from 'react-native';
 
-import { BottomSheetModal, BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 
 import BaseBottomSheetModal, {
 	BottomSheetModalMethods,
 } from '@/src/components/BaseBottomSheetModal';
 import { router } from 'expo-router';
+
+import React from 'react';
+
+import * as SecureStore from 'expo-secure-store';
 
 const Form: FC = () => {
 	const { isLoaded, signUp, setActive } = useSignUp();
@@ -32,8 +37,6 @@ const Form: FC = () => {
 	const [confirmedPassword, setConfirmedPassword] = useState('Rain2024*Secure');
 	const [error, setError] = useState('');
 	const [pendingVerification, setPendingVerification] = useState(false);
-
-	const [code, setCode] = useState('');
 
 	const [verificationCode, setVerificationCode] = useState('');
 
@@ -85,6 +88,13 @@ const Form: FC = () => {
 			// and redirect the user
 			if (signUpAttempt.status === 'complete') {
 				await setActive({ session: signUpAttempt.createdSessionId });
+
+				// Сохраняем email и пароль в SecureStore для биометрии
+				await SecureStore.setItemAsync('credentials', JSON.stringify({ email, password }));
+
+				// Сохраняем, что пользователь залогинен через email
+				await SecureStore.setItemAsync('provider', 'email');
+
 				router.replace('/');
 			} else {
 				// If the status is not complete, check why. User may need to

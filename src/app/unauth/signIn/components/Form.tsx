@@ -1,4 +1,4 @@
-import React, { FC, useCallback, useEffect, useState } from 'react';
+import React, { FC, useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Keyboard, StyleSheet, Text, TouchableWithoutFeedback, View } from 'react-native';
 
 import BaseTextInput from '@/src/components/BaseTextInput';
@@ -13,10 +13,12 @@ import * as LocalAuthentication from 'expo-local-authentication';
 
 import * as SecureStore from 'expo-secure-store';
 
-import { useAuth, useSignIn, useSSO } from '@clerk/clerk-expo';
+import { useAuth, useSignIn, useSSO, useUser } from '@clerk/clerk-expo';
 
 import { useWarmUpBrowser } from '@/src/hooks/useWarmUpBrowser';
 
+import { BottomSheetModalMethods } from '@/src/components/BaseBottomSheetModal';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import * as AuthSession from 'expo-auth-session';
 
 const Form: FC = () => {
@@ -31,6 +33,11 @@ const Form: FC = () => {
 	const [password, setPassword] = useState('');
 	const [authLoading, setAuthLoading] = useState(false);
 	const [canUseBiometrics, setCanUseBiometrics] = useState(false);
+
+	const [showPasswordModal, setShowPasswordModal] = useState(false);
+	const bottomSheetRef = useRef<BottomSheetModalMethods>(null);
+
+	const { user } = useUser();
 
 	// const { loading: bioLoading } = useBiometricLogin();
 
@@ -58,6 +65,9 @@ const Form: FC = () => {
 			// set the created session as active and redirect the user
 			if (signInAttempt.status === 'complete') {
 				console.log('status is complete?', signInAttempt.status);
+
+				// Сохраняем тип провайдера в SecureStore
+				await SecureStore.setItemAsync('provider', 'email');
 
 				if (!useLocal) {
 					await setCredentials({
@@ -87,83 +97,95 @@ const Form: FC = () => {
 	};
 
 	const handleBiometricLogin = async () => {
-		// 🔧 Dev-mode fallback to skip actual biometric prompt
-		if (__DEV__) {
-			console.warn('DEV MODE: Skipping biometric prompt');
+		console.log('Biometric button pressed');
 
-			const storedCreds = await SecureStore.getItemAsync('credentials');
-			if (!storedCreds) {
-				Alert.alert('No saved credentials found');
+		const provider = await SecureStore.getItemAsync('provider');
+		const locked = await SecureStore.getItemAsync('locked');
+
+		console.log('Provider:', provider, 'Locked:', locked);
+		console.log('signIn:', signIn);
+		console.log('setActive:', setActive);
+
+		if (!provider) {
+			Alert.alert('No provider info found. Please sign in normally.');
+			return;
+		}
+
+		if (locked === 'true') {
+			if (__DEV__) {
+				console.warn('DEV MODE: Skipping biometric prompt');
+
+				if (provider === 'email') {
+					const storedCreds = await SecureStore.getItemAsync('credentials');
+					if (!storedCreds) {
+						Alert.alert('No saved credentials found');
+						return;
+					}
+					const { email, password } = JSON.parse(storedCreds);
+					try {
+						if (!signIn) {
+							return;
+						}
+
+						const signInAttempt = await signIn.create({ identifier: email, password });
+						if (signInAttempt.status === 'complete') {
+							await setActive({ session: signInAttempt.createdSessionId });
+							await SecureStore.setItemAsync('locked', 'false');
+							router.replace('/');
+						} else {
+							Alert.alert('Additional verification required.');
+						}
+					} catch (err) {
+						Alert.alert('Login failed');
+					}
+				} else {
+					// Провайдер — просто разблокируем
+					await SecureStore.setItemAsync('locked', 'false');
+					router.replace('/');
+				}
 				return;
 			}
 
-			const { email, password } = JSON.parse(storedCreds);
+			// Реальный биометрический запрос (прод)
+			const result = await LocalAuthentication.authenticateAsync({
+				promptMessage: 'Login with biometrics',
+			});
 
-			try {
-				if (!signIn) {
-					Alert.alert('Sign-in is not available');
+			if (!result.success) {
+				Alert.alert('Biometric authentication failed');
+				return;
+			}
+
+			if (provider === 'email') {
+				const storedCreds = await SecureStore.getItemAsync('credentials');
+				if (!storedCreds) {
+					Alert.alert('No saved credentials found');
 					return;
 				}
-				const signInAttempt = await signIn.create({ identifier: email, password });
+				const { email, password } = JSON.parse(storedCreds);
+				try {
+					if (!signIn) {
+						return;
+					}
 
-				if (signInAttempt.status === 'complete') {
-					await setActive({ session: signInAttempt.createdSessionId });
-					router.replace('/'); // ✅ Redirect to home
-				} else {
-					Alert.alert('Additional verification required.');
+					const signInAttempt = await signIn.create({ identifier: email, password });
+					if (signInAttempt.status === 'complete') {
+						await setActive({ session: signInAttempt.createdSessionId });
+						await SecureStore.setItemAsync('locked', 'false');
+						router.replace('/');
+					} else {
+						Alert.alert('Additional verification required.');
+					}
+				} catch (err) {
+					Alert.alert('Login failed');
 				}
-			} catch (err) {
-				console.error('Biometric login failed (DEV fallback):', err);
-				Alert.alert('Login failed', 'Could not authenticate.');
-			}
-
-			return;
-		}
-
-		// 🔐 Biometric prompt for real devices
-		const result = await LocalAuthentication.authenticateAsync({
-			promptMessage: 'Login with biometrics',
-		});
-
-		console.log('Biometric result:', result);
-
-		if (!result.success) {
-			if (result.error === 'not_enrolled') {
-				Alert.alert(
-					'Biometric not set up',
-					'Please enroll your fingerprint or face ID and enable a lock screen.',
-				);
 			} else {
-				Alert.alert('Biometric authentication failed', result.error || 'Unknown error');
+				await SecureStore.setItemAsync('locked', 'false');
+				router.replace('/');
 			}
-			return;
-		}
-
-		// 🧠 Proceed with credential-based sign-in
-		const storedCreds = await SecureStore.getItemAsync('credentials');
-		if (!storedCreds) {
-			Alert.alert('No saved credentials found');
-			return;
-		}
-
-		const { email, password } = JSON.parse(storedCreds);
-
-		try {
-			if (!signIn) {
-				Alert.alert('Sign-in is not available');
-				return;
-			}
-			const signInAttempt = await signIn.create({ identifier: email, password });
-
-			if (signInAttempt.status === 'complete') {
-				await setActive({ session: signInAttempt.createdSessionId });
-				router.replace('/'); // ✅ Redirect to home
-			} else {
-				Alert.alert('Additional verification required.');
-			}
-		} catch (err) {
-			console.error('Biometric login failed:', err);
-			Alert.alert('Login failed', 'Could not authenticate with biometrics.');
+		} else {
+			// Если не заблокировано — сразу внутрь
+			router.replace('/');
 		}
 	};
 
@@ -182,6 +204,11 @@ const Form: FC = () => {
 				// If sign in was successful, set the active session
 				if (createdSessionId) {
 					await setActive?.({ session: createdSessionId });
+
+					// Сохраняем провайдера в SecureStore
+					await SecureStore.setItemAsync('provider', strategy);
+
+					console.log('provider', strategy);
 
 					router.replace('/auth/Profile');
 				} else {
@@ -221,172 +248,176 @@ const Form: FC = () => {
 	}, []);
 
 	return (
-		<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-			<View style={styles.container}>
-				<View style={{ flex: 2, justifyContent: 'space-between' }}>
-					{/* <Header title="Sign In" headerStyles={styles.header} /> */}
-					<View>
-						<BaseTextInput
-							label="Email"
-							value={email}
-							placeholder="Enter your email"
-							onChangeText={(prevEmail) => setEmail(prevEmail.toLowerCase())}
-						/>
+		<BottomSheetModalProvider>
+			<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+				<View style={styles.container}>
+					<View style={{ flex: 2, justifyContent: 'space-between' }}>
+						{/* <Header title="Sign In" headerStyles={styles.header} /> */}
+						<View>
+							<BaseTextInput
+								label="Email"
+								value={email}
+								placeholder="Enter your email"
+								onChangeText={(prevEmail) => setEmail(prevEmail.toLowerCase())}
+							/>
 
-						<BaseTextInput
-							label="Password"
-							value={password}
-							placeholder="Enter your password"
-							isSecure
-							onChangeText={(prevPassword) => setPassword(prevPassword)}
-						/>
+							<BaseTextInput
+								label="Password"
+								value={password}
+								placeholder="Enter your password"
+								isSecure
+								onChangeText={(prevPassword) => setPassword(prevPassword)}
+							/>
 
-						<View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+							<View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+								<Text style={{ fontSize: 18, color: COLORS.white }}>
+									Forgot password?
+								</Text>
+								<TextButton
+									title="Reset"
+									titleStyles={{ textDecorationLine: 'underline' }}
+									onPress={() =>
+										router.navigate(
+											'/unauth/signIn/components/ResetPasswordForm',
+										)
+									}
+								/>
+							</View>
+						</View>
+
+						{canUseBiometrics && (
+							<IconButton
+								disabled={authLoading}
+								iconName="touch-id"
+								buttonStyles={styles.touchId}
+								onPress={handleBiometricLogin} //handleBiometricLogin}
+							/>
+						)}
+
+						<BaseButton
+							disabled={isDisabled}
+							title="Sign In"
+							containerStyles={{ marginBottom: 16 }}
+							onPress={() => handleSignIn(false)}
+						/>
+					</View>
+
+					<View
+						style={{
+							flex: 1,
+							// marginTop: 48,
+							justifyContent: 'space-between',
+						}}
+					>
+						<View
+							style={{
+								flexDirection: 'row',
+								justifyContent: 'space-between',
+							}}
+						>
+							<View
+								style={{
+									width: '35%',
+									height: 2,
+									alignItems: 'center',
+									alignSelf: 'center',
+									backgroundColor: COLORS.white,
+								}}
+							/>
+
+							<Text
+								style={{
+									alignItems: 'center',
+									alignSelf: 'center',
+									color: COLORS.white,
+									fontSize: 18,
+									fontWeight: 'bold',
+								}}
+							>
+								OR
+							</Text>
+
+							<View
+								style={{
+									width: '35%',
+									height: 2,
+									alignItems: 'center',
+									alignSelf: 'center',
+									backgroundColor: COLORS.white,
+								}}
+							/>
+						</View>
+
+						<View
+							style={{
+								flexDirection: 'row',
+								justifyContent: 'space-between',
+							}}
+						>
+							<IconButton
+								iconName="google"
+								buttonStyles={{
+									backgroundColor: COLORS.white,
+									opacity: 0.6,
+									height: 60,
+									width: 85,
+									borderRadius: 35,
+									alignItems: 'center',
+									justifyContent: 'center',
+								}}
+								onPress={() => handleProvidersSignIn('oauth_google')}
+							/>
+
+							<IconButton
+								iconName="apple"
+								buttonStyles={{
+									backgroundColor: COLORS.white,
+									opacity: 0.6,
+									height: 60,
+									width: 85,
+									borderRadius: 35,
+									alignItems: 'center',
+									justifyContent: 'center',
+								}}
+								onPress={() => handleProvidersSignIn('oauth_apple')}
+							/>
+
+							<IconButton
+								iconName="github"
+								buttonStyles={{
+									backgroundColor: COLORS.white,
+									opacity: 0.2,
+									height: 60,
+									width: 85,
+									borderRadius: 35,
+									alignItems: 'center',
+									justifyContent: 'center',
+								}}
+								onPress={() => handleProvidersSignIn('oauth_github')}
+							/>
+						</View>
+
+						<View
+							style={{
+								flexDirection: 'row',
+								gap: 8,
+								alignItems: 'center',
+								justifyContent: 'center',
+							}}
+						>
 							<Text style={{ fontSize: 18, color: COLORS.white }}>
-								Forgot password?
+								Don't have an account?
 							</Text>
 							<TextButton
-								title="Reset"
+								title="Sign up"
 								titleStyles={{ textDecorationLine: 'underline' }}
-								onPress={() =>
-									router.navigate('/unauth/signIn/components/ResetPasswordForm')
-								}
+								onPress={() => router.navigate('/unauth/signUp')}
 							/>
 						</View>
 					</View>
-
-					{canUseBiometrics && (
-						<IconButton
-							disabled={authLoading}
-							iconName="touch-id"
-							buttonStyles={styles.touchId}
-							onPress={handleBiometricLogin} //handleBiometricLogin}
-						/>
-					)}
-
-					<BaseButton
-						disabled={isDisabled}
-						title="Sign In"
-						containerStyles={{ marginBottom: 16 }}
-						onPress={() => handleSignIn(false)}
-					/>
 				</View>
-
-				<View
-					style={{
-						flex: 1,
-						// marginTop: 48,
-						justifyContent: 'space-between',
-					}}
-				>
-					<View
-						style={{
-							flexDirection: 'row',
-							justifyContent: 'space-between',
-						}}
-					>
-						<View
-							style={{
-								width: '35%',
-								height: 2,
-								alignItems: 'center',
-								alignSelf: 'center',
-								backgroundColor: COLORS.white,
-							}}
-						/>
-
-						<Text
-							style={{
-								alignItems: 'center',
-								alignSelf: 'center',
-								color: COLORS.white,
-								fontSize: 18,
-								fontWeight: 'bold',
-							}}
-						>
-							OR
-						</Text>
-
-						<View
-							style={{
-								width: '35%',
-								height: 2,
-								alignItems: 'center',
-								alignSelf: 'center',
-								backgroundColor: COLORS.white,
-							}}
-						/>
-					</View>
-
-					<View
-						style={{
-							flexDirection: 'row',
-							justifyContent: 'space-between',
-						}}
-					>
-						<IconButton
-							iconName="google"
-							buttonStyles={{
-								backgroundColor: COLORS.white,
-								opacity: 0.6,
-								height: 60,
-								width: 85,
-								borderRadius: 35,
-								alignItems: 'center',
-								justifyContent: 'center',
-							}}
-							onPress={() => handleProvidersSignIn('oauth_google')}
-						/>
-
-						<IconButton
-							iconName="apple"
-							buttonStyles={{
-								backgroundColor: COLORS.white,
-								opacity: 0.6,
-								height: 60,
-								width: 85,
-								borderRadius: 35,
-								alignItems: 'center',
-								justifyContent: 'center',
-							}}
-							onPress={() => handleProvidersSignIn('oauth_apple')}
-						/>
-
-						<IconButton
-							iconName="github"
-							buttonStyles={{
-								backgroundColor: COLORS.white,
-								opacity: 0.2,
-								height: 60,
-								width: 85,
-								borderRadius: 35,
-								alignItems: 'center',
-								justifyContent: 'center',
-							}}
-							onPress={() => handleProvidersSignIn('oauth_github')}
-						/>
-					</View>
-
-					<View
-						style={{
-							flexDirection: 'row',
-							gap: 8,
-							alignItems: 'center',
-							justifyContent: 'center',
-						}}
-					>
-						<Text style={{ fontSize: 18, color: COLORS.white }}>
-							Don't have an account?
-						</Text>
-						<TextButton
-							title="Sign up"
-							titleStyles={{ textDecorationLine: 'underline' }}
-							onPress={() => router.navigate('/unauth/signUp')}
-						/>
-					</View>
-				</View>
-			</View>
-		</TouchableWithoutFeedback>
+			</TouchableWithoutFeedback>
+		</BottomSheetModalProvider>
 	);
 };
 

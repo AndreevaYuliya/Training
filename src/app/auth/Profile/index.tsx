@@ -1,7 +1,8 @@
 import React, { FC } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, StyleSheet, Text, View } from 'react-native';
 
 import { router } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 
 import { useClerk, useUser } from '@clerk/clerk-expo';
 
@@ -14,6 +15,29 @@ import COLORS from '@/src/constants/colors';
 const Profile: FC = () => {
 	const { signOut } = useClerk();
 	const { user } = useUser();
+
+	const handleLogout = async () => {
+		Alert.alert('Logout pressed');
+		const provider = await SecureStore.getItemAsync('provider');
+
+		console.log('logout', provider);
+
+		// Всегда вызываем signOut
+		await signOut();
+
+		if (provider && provider !== 'email') {
+			// Провайдерный вход — просто блокируем приложение
+			await SecureStore.setItemAsync('locked', 'true');
+			router.replace('/unauth/signIn');
+		} else {
+			// Email/password — полноценный logout
+			await signOut();
+			// await SecureStore.deleteItemAsync('credentials');
+			await SecureStore.setItemAsync('locked', 'true'); // <— ключевой момент
+			// await SecureStore.deleteItemAsync('provider');
+			router.replace('/unauth/signIn');
+		}
+	};
 
 	if (!user) {
 		return null;
@@ -71,10 +95,12 @@ const Profile: FC = () => {
 				buttonStyles={{
 					padding: 15,
 				}}
-				onPress={async () => {
-					await signOut();
-					router.replace('/unauth/signIn');
-				}}
+				// onPress={async () => {
+				// 	await signOut();
+				// 	router.replace('/unauth/signIn');
+				// }}
+
+				onPress={handleLogout}
 			/>
 		</View>
 	);
