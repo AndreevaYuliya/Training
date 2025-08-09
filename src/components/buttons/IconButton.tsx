@@ -1,17 +1,19 @@
+import React from 'react';
 import { FC } from 'react';
 
 import { Pressable, StyleProp, StyleSheet, ViewStyle } from 'react-native';
 
-import COLORS from '@/src/constants/colors';
 import { FontAwesome, Ionicons, MaterialIcons } from '@expo/vector-icons';
-import React from 'react';
+
 import ArrowLeftIcon from '../../assets/icons/back.svg';
-import CloseEyeIcon from '../../assets/icons/close-eye.svg';
 import CrossIcon from '../../assets/icons/close.svg';
+import CloseEyeIcon from '../../assets/icons/close-eye.svg';
 import Eye from '../../assets/icons/eye.svg';
 import GoogleIcon from '../../assets/icons/google.svg';
 import ProfileIcon from '../../assets/icons/profile.svg';
 import TouchIdIcon from '../../assets/icons/touch-id.svg';
+
+import COLORS from '@/src/constants/colors';
 
 type Props = {
 	iconName: IconType;

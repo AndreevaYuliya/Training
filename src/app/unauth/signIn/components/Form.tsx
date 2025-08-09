@@ -1,25 +1,26 @@
 import React, { FC, useCallback, useEffect, useRef, useState } from 'react';
+
 import { Alert, Keyboard, StyleSheet, Text, TouchableWithoutFeedback, View } from 'react-native';
+
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+
+import { router } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
+import * as AuthSession from 'expo-auth-session';
+import * as LocalAuthentication from 'expo-local-authentication';
+
+import { useAuth, useSignIn, useSSO } from '@clerk/clerk-expo';
+import { useLocalCredentials } from '@clerk/clerk-expo/local-credentials';
+
+import { useWarmUpBrowser } from '@/src/hooks/useWarmUpBrowser';
 
 import BaseTextInput from '@/src/components/BaseTextInput';
 import BaseButton from '@/src/components/buttons/BaseButton';
 import IconButton from '@/src/components/buttons/IconButton';
 import TextButton from '@/src/components/buttons/TextButton';
-import COLORS from '@/src/constants/colors';
-import { router } from 'expo-router';
-
-import { useLocalCredentials } from '@clerk/clerk-expo/local-credentials';
-import * as LocalAuthentication from 'expo-local-authentication';
-
-import * as SecureStore from 'expo-secure-store';
-
-import { useAuth, useSignIn, useSSO, useUser } from '@clerk/clerk-expo';
-
-import { useWarmUpBrowser } from '@/src/hooks/useWarmUpBrowser';
-
 import { BottomSheetModalMethods } from '@/src/components/BaseBottomSheetModal';
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import * as AuthSession from 'expo-auth-session';
+
+import COLORS from '@/src/constants/colors';
 
 const Form: FC = () => {
 	const { signIn, setActive, isLoaded } = useSignIn();
@@ -34,19 +35,31 @@ const Form: FC = () => {
 	const [authLoading, setAuthLoading] = useState(false);
 	const [canUseBiometrics, setCanUseBiometrics] = useState(false);
 
-	const [showPasswordModal, setShowPasswordModal] = useState(false);
 	const bottomSheetRef = useRef<BottomSheetModalMethods>(null);
 
-	const { user } = useUser();
+	useEffect(() => {
+		(async () => {
+			const hasHardware = await LocalAuthentication.hasHardwareAsync();
+			const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+			const storedCreds = await SecureStore.getItemAsync('credentials');
 
-	// const { loading: bioLoading } = useBiometricLogin();
+			console.log('Biometric available:', hasHardware, storedCreds);
+
+			const biometricsAvailable = hasHardware /*&& isEnrolled*/ && !!storedCreds;
+
+			setCanUseBiometrics(biometricsAvailable);
+		})();
+	}, []);
 
 	// Handle the submission of the sign-in form
 	const handleSignIn = async (useLocal: boolean) => {
-		if (!isLoaded) return;
+		if (!isLoaded) {
+			return;
+		}
 
 		if (isSignedIn) {
 			console.log('User already signed in');
+
 			router.replace('/');
 			return;
 		}
@@ -74,6 +87,7 @@ const Form: FC = () => {
 						identifier: email,
 						password,
 					});
+
 					await SecureStore.setItemAsync(
 						'credentials',
 						JSON.stringify({ email, password }),
@@ -99,93 +113,38 @@ const Form: FC = () => {
 	const handleBiometricLogin = async () => {
 		console.log('Biometric button pressed');
 
-		const provider = await SecureStore.getItemAsync('provider');
-		const locked = await SecureStore.getItemAsync('locked');
+		// Реальный биометрический запрос (прод)
+		const result = await LocalAuthentication.authenticateAsync({
+			promptMessage: 'Login with biometrics',
+		});
 
-		console.log('Provider:', provider, 'Locked:', locked);
-		console.log('signIn:', signIn);
-		console.log('setActive:', setActive);
-
-		if (!provider) {
-			Alert.alert('No provider info found. Please sign in normally.');
+		if (!result.success) {
+			Alert.alert('Biometric authentication failed');
 			return;
 		}
 
-		if (locked === 'true') {
-			if (__DEV__) {
-				console.warn('DEV MODE: Skipping biometric prompt');
-
-				if (provider === 'email') {
-					const storedCreds = await SecureStore.getItemAsync('credentials');
-					if (!storedCreds) {
-						Alert.alert('No saved credentials found');
-						return;
-					}
-					const { email, password } = JSON.parse(storedCreds);
-					try {
-						if (!signIn) {
-							return;
-						}
-
-						const signInAttempt = await signIn.create({ identifier: email, password });
-						if (signInAttempt.status === 'complete') {
-							await setActive({ session: signInAttempt.createdSessionId });
-							await SecureStore.setItemAsync('locked', 'false');
-							router.replace('/');
-						} else {
-							Alert.alert('Additional verification required.');
-						}
-					} catch (err) {
-						Alert.alert('Login failed');
-					}
-				} else {
-					// Провайдер — просто разблокируем
-					await SecureStore.setItemAsync('locked', 'false');
-					router.replace('/');
-				}
+		const storedCreds = await SecureStore.getItemAsync('credentials');
+		if (!storedCreds) {
+			Alert.alert('No saved credentials found');
+			return;
+		}
+		const { email, password } = JSON.parse(storedCreds);
+		try {
+			if (!signIn) {
 				return;
 			}
 
-			// Реальный биометрический запрос (прод)
-			const result = await LocalAuthentication.authenticateAsync({
-				promptMessage: 'Login with biometrics',
-			});
+			const signInAttempt = await signIn.create({ identifier: email, password });
 
-			if (!result.success) {
-				Alert.alert('Biometric authentication failed');
-				return;
-			}
+			if (signInAttempt.status === 'complete') {
+				await setActive({ session: signInAttempt.createdSessionId });
 
-			if (provider === 'email') {
-				const storedCreds = await SecureStore.getItemAsync('credentials');
-				if (!storedCreds) {
-					Alert.alert('No saved credentials found');
-					return;
-				}
-				const { email, password } = JSON.parse(storedCreds);
-				try {
-					if (!signIn) {
-						return;
-					}
-
-					const signInAttempt = await signIn.create({ identifier: email, password });
-					if (signInAttempt.status === 'complete') {
-						await setActive({ session: signInAttempt.createdSessionId });
-						await SecureStore.setItemAsync('locked', 'false');
-						router.replace('/');
-					} else {
-						Alert.alert('Additional verification required.');
-					}
-				} catch (err) {
-					Alert.alert('Login failed');
-				}
-			} else {
-				await SecureStore.setItemAsync('locked', 'false');
 				router.replace('/');
+			} else {
+				Alert.alert('Additional verification required.');
 			}
-		} else {
-			// Если не заблокировано — сразу внутрь
-			router.replace('/');
+		} catch (err) {
+			Alert.alert('Login failed');
 		}
 	};
 
@@ -206,9 +165,7 @@ const Form: FC = () => {
 					await setActive?.({ session: createdSessionId });
 
 					// Сохраняем провайдера в SecureStore
-					await SecureStore.setItemAsync('provider', strategy);
-
-					console.log('provider', strategy);
+					await SecureStore.deleteItemAsync('credentials');
 
 					router.replace('/auth/Profile');
 				} else {
@@ -227,25 +184,6 @@ const Form: FC = () => {
 	);
 
 	const isDisabled = !email || !password;
-
-	useEffect(() => {
-		(async () => {
-			const hasHardware = await LocalAuthentication.hasHardwareAsync();
-			const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-			const storedCreds = await SecureStore.getItemAsync('credentials');
-			console.log('Biometric available:', hasHardware, storedCreds);
-
-			const biometricsAvailable = hasHardware && isEnrolled && !!storedCreds;
-
-			// 👇 Allow bypass for emulator/dev only
-			if (__DEV__ && storedCreds) {
-				console.warn('Bypassing biometric check in DEV mode');
-				setCanUseBiometrics(true);
-			} else {
-				setCanUseBiometrics(biometricsAvailable);
-			}
-		})();
-	}, []);
 
 	return (
 		<BottomSheetModalProvider>
@@ -273,14 +211,11 @@ const Form: FC = () => {
 								<Text style={{ fontSize: 18, color: COLORS.white }}>
 									Forgot password?
 								</Text>
+
 								<TextButton
 									title="Reset"
 									titleStyles={{ textDecorationLine: 'underline' }}
-									onPress={() =>
-										router.navigate(
-											'/unauth/signIn/components/ResetPasswordForm',
-										)
-									}
+									onPress={() => router.navigate('/common/ResetPasswordForm')}
 								/>
 							</View>
 						</View>
@@ -305,7 +240,6 @@ const Form: FC = () => {
 					<View
 						style={{
 							flex: 1,
-							// marginTop: 48,
 							justifyContent: 'space-between',
 						}}
 					>
@@ -408,6 +342,7 @@ const Form: FC = () => {
 							<Text style={{ fontSize: 18, color: COLORS.white }}>
 								Don't have an account?
 							</Text>
+
 							<TextButton
 								title="Sign up"
 								titleStyles={{ textDecorationLine: 'underline' }}

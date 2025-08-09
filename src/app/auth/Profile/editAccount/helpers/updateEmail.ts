@@ -1,8 +1,12 @@
-import { BottomSheetModalMethods } from '@/src/components/BaseBottomSheetModal';
-import { useUser } from '@clerk/clerk-expo';
 import { useRef } from 'react';
-import useProfileFormState from './useProfileFormState';
+
+import { useUser } from '@clerk/clerk-expo';
+
 import updateUserEmail from '@/src/hooks/updateUserEmail';
+
+import { BottomSheetModalMethods } from '@/src/components/BaseBottomSheetModal';
+
+import useProfileFormState from './useProfileFormState';
 
 const updateEmail = () => {
 	const {
@@ -25,9 +29,11 @@ const updateEmail = () => {
 
 		try {
 			const newEmailObj = await updateUserEmail(user, email);
+
 			if (newEmailObj) {
 				setEmailToVerify(newEmailObj);
 				setPendingVerification(true);
+
 				bottomSheetRef.current?.show('changeEmail');
 			}
 		} catch (err: any) {
@@ -43,6 +49,7 @@ const updateEmail = () => {
 
 		try {
 			await emailToVerify.attemptVerification({ code: verificationCode });
+
 			await user.update({ primaryEmailAddressId: emailToVerify.id });
 
 			// Delete old emails
@@ -52,6 +59,7 @@ const updateEmail = () => {
 
 			setPendingVerification(false);
 			setEmailToVerify(null);
+
 			bottomSheetRef.current?.close();
 		} catch (err: any) {
 			console.error('Verification error:', err);

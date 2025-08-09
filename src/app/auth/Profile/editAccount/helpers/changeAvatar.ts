@@ -1,7 +1,10 @@
-import { useUser } from '@clerk/clerk-expo';
-import * as ImageManipulator from 'expo-image-manipulator';
-import * as ImagePicker from 'expo-image-picker';
 import { Alert } from 'react-native';
+
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+
+import { useUser } from '@clerk/clerk-expo';
+
 import useProfileFormState from './useProfileFormState';
 
 const changeAvatar = () => {
@@ -22,7 +25,9 @@ const changeAvatar = () => {
 
 			if (!result.canceled) {
 				const asset = result.assets[0]; // ✅ This defines 'asset'
+
 				setImage(asset.uri);
+
 				await uploadToClerk(asset.uri);
 			}
 		} catch (error) {

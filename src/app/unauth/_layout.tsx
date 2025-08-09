@@ -1,35 +1,26 @@
-import { router, Stack, useRouter } from "expo-router";
-import { useAuth } from "@clerk/clerk-expo";
-import { useEffect } from "react";
-import { View, ActivityIndicator } from "react-native";
+import React, { useEffect } from 'react';
 
-export default function Layout() {
-  const { isLoaded, isSignedIn } = useAuth();
+import { Stack, usePathname, useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 
-  // console.log("unauth", isSignedIn);
-  // console.log("unauth", isSignedIn);
-  // console.log("unauth", isSignedIn);
+import { useAuth } from '@clerk/clerk-expo';
 
-  // if (isSignedIn) {
-  //   return router.replace("/auth/Profile");
-  // }
+const UnauthLayout = () => {
+	const { isLoaded, isSignedIn } = useAuth();
+	const router = useRouter();
+	const pathname = usePathname();
 
-  console.log("AuthLayout rendered", { isLoaded, isSignedIn });
+	useEffect(() => {
+		const checkProvider = async () => {
+			if (isLoaded && isSignedIn) {
+				router.replace('/auth/Profile'); // or lowercase if needed
+			}
+		};
 
-  // useEffect(() => {
-  //   if (isSignedIn) {
-  //     console.log("unauth", isSignedIn);
-  //     console.log("unauth", isSignedIn);
-  //     console.log("unauth", isSignedIn);
-  //     router.replace("/auth/Profile");
-  //   }
-  // }, [isLoaded, isSignedIn, router]);
+		checkProvider();
+	}, [isLoaded, isSignedIn]);
 
-  // Пользователь залогинен — рендерим навигацию дальше
-  return (
-    <Stack screenOptions={{ headerShown: false }}>
-      {/* <Stack.Screen name="SignIn" />
-      <Stack.Screen name="SignUp" /> */}
-    </Stack>
-  );
-}
+	return <Stack screenOptions={{ headerShown: false }}></Stack>;
+};
+
+export default UnauthLayout;

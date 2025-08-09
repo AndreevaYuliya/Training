@@ -1,9 +1,6 @@
-import BaseTextInput from '@/src/components/BaseTextInput';
-import BaseButton from '@/src/components/buttons/BaseButton';
-import Header from '@/src/components/Header';
-import { useSignUp } from '@clerk/clerk-expo';
-
+import React from 'react';
 import { FC, useRef, useState } from 'react';
+
 import {
 	Keyboard,
 	ScrollView,
@@ -13,16 +10,20 @@ import {
 	View,
 } from 'react-native';
 
+import { router } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
+
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+
+import { useClerk, useSignUp } from '@clerk/clerk-expo';
+
+import Header from '@/src/components/Header';
+import BaseTextInput from '@/src/components/BaseTextInput';
+import BaseButton from '@/src/components/buttons/BaseButton';
 
 import BaseBottomSheetModal, {
 	BottomSheetModalMethods,
 } from '@/src/components/BaseBottomSheetModal';
-import { router } from 'expo-router';
-
-import React from 'react';
-
-import * as SecureStore from 'expo-secure-store';
 
 const Form: FC = () => {
 	const { isLoaded, signUp, setActive } = useSignUp();
@@ -35,6 +36,7 @@ const Form: FC = () => {
 	const [phoneNumber, setPhoneNumber] = useState('+380961545544');
 	const [password, setPassword] = useState('Rain2024*Secure');
 	const [confirmedPassword, setConfirmedPassword] = useState('Rain2024*Secure');
+
 	const [error, setError] = useState('');
 	const [pendingVerification, setPendingVerification] = useState(false);
 
@@ -45,7 +47,10 @@ const Form: FC = () => {
 	// Handle submission of sign-up form
 	const handleSignUp = async () => {
 		console.log('handleSignUp triggered');
-		if (!isLoaded) return;
+
+		if (!isLoaded) {
+			return;
+		}
 
 		try {
 			// Step 1: Create the sign-up but do NOT activate session yet
@@ -68,15 +73,19 @@ const Form: FC = () => {
 
 			// Step 3: Show verification UI
 			setPendingVerification(true);
+
 			bottomSheetRef.current?.show('signUp');
 		} catch (err) {
 			console.error('Sign-up error:', err);
+
 			setError('Sign-up failed');
 		}
 	};
 
 	const onVerifyPress = async () => {
-		if (!isLoaded) return;
+		if (!isLoaded) {
+			return;
+		}
 
 		try {
 			// Use the code the user provided to attempt verification
@@ -95,7 +104,9 @@ const Form: FC = () => {
 				// Сохраняем, что пользователь залогинен через email
 				await SecureStore.setItemAsync('provider', 'email');
 
-				router.replace('/');
+				console.log('Redirecting to /auth/Profile...');
+
+				router.push('/auth/Profile');
 			} else {
 				// If the status is not complete, check why. User may need to
 				// complete further steps.
@@ -218,6 +229,7 @@ const Form: FC = () => {
 					onSuccess={() => {
 						// логика после успешной верификации
 						bottomSheetRef.current?.close();
+
 						setVerificationCode('');
 						setPendingVerification(false);
 					}}

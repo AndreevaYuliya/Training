@@ -1,7 +1,8 @@
-import COLORS from '@/src/constants/colors';
 import React, { FC, ReactNode } from 'react';
 
 import { Pressable, StyleProp, StyleSheet, Text, TextStyle, ViewStyle } from 'react-native';
+
+import COLORS from '@/src/constants/colors';
 
 type Props = {
 	title?: string;

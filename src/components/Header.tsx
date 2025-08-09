@@ -1,8 +1,13 @@
+import React from 'react';
 import { FC, ReactNode } from 'react';
+
 import { View, Text, StyleSheet, StyleProp, TextStyle } from 'react-native';
-import IconButton from './buttons/IconButton';
-import COLORS from '../constants/colors';
+
 import { router } from 'expo-router';
+
+import IconButton from './buttons/IconButton';
+
+import COLORS from '../constants/colors';
 
 type Props = {
 	title: string;

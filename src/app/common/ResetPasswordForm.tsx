@@ -1,19 +1,23 @@
+import React, { FC, useEffect, useState } from 'react';
+
+import { StyleSheet, Text, View } from 'react-native';
+
+import { router } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
+
+import { useAuth, useSignIn } from '@clerk/clerk-expo';
+
+import Header from '@/src/components/Header';
 import BaseTextInput from '@/src/components/BaseTextInput';
 import BaseButton from '@/src/components/buttons/BaseButton';
-import Header from '@/src/components/Header';
+
 import COLORS from '@/src/constants/colors';
-import { useAuth, useSignIn } from '@clerk/clerk-expo';
-import { router } from 'expo-router';
-import React, { FC, useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const ForgotPasswordPage: FC = () => {
-	const insets = useSafeAreaInsets();
-
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [code, setCode] = useState('');
+
 	const [successfulCreation, setSuccessfulCreation] = useState(false);
 	const [secondFactor, setSecondFactor] = useState(false);
 	const [error, setError] = useState('');
@@ -68,6 +72,9 @@ const ForgotPasswordPage: FC = () => {
 					// the newly created session (user is now signed in)
 					setActive({ session: result.createdSessionId });
 					setError('');
+
+					// ✅ Redirect to Profile or any success screen
+					router.replace('/auth/Profile'); // or any route
 				} else {
 					console.log(result);
 				}
@@ -79,20 +86,13 @@ const ForgotPasswordPage: FC = () => {
 	};
 
 	return (
-		<View
-			style={[
-				styles.container,
-				{
-					paddingTop: insets.top,
-					paddingBottom: insets.bottom,
-				},
-			]}
-		>
+		<View style={styles.container}>
 			<Header
 				backButton
 				title="Reset Password"
 				headerStyles={styles.header}
 			/>
+
 			<View style={styles.formContainer}>
 				{!successfulCreation && (
 					<View>
@@ -154,10 +154,8 @@ const styles = StyleSheet.create({
 		backgroundColor: COLORS.background,
 	},
 	formContainer: {
-		// flex: 1,
 		marginTop: 24,
 		marginHorizontal: 32,
-		// justifyContent: "space-between",
 	},
 	header: {
 		textAlign: 'center',

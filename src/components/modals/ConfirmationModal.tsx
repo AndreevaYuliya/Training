@@ -1,8 +1,11 @@
 // EditFieldModal.tsx
 import React, { FC } from 'react';
+
 import { Modal, StyleSheet, Text, View } from 'react-native';
-import COLORS from '../../constants/colors';
+
 import BaseButton from '../buttons/BaseButton';
+
+import COLORS from '../../constants/colors';
 
 type Props = {
 	visible: boolean;
@@ -14,6 +17,7 @@ type Props = {
 
 const ConfirmationModal: FC<Props> = (props) => {
 	const { visible, title, message, onCancel, onConfirm } = props;
+
 	return (
 		<Modal
 			visible={visible}

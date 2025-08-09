@@ -10,7 +10,9 @@ const updateUserEmail = async (
 
 		if (newEmail && newEmail !== currentPrimary) {
 			console.log('Creating new email address...');
+
 			const newEmailObj = await user.createEmailAddress({ email: newEmail });
+
 			console.log('Create email result:', newEmailObj);
 
 			await newEmailObj.prepareVerification({ strategy: 'email_code' });
@@ -21,6 +23,7 @@ const updateUserEmail = async (
 		return null;
 	} catch (error) {
 		console.error('Email update error:', error);
+
 		throw error;
 	}
 };

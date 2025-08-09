@@ -1,5 +1,6 @@
 // useProfileFormState.ts
 import { useState } from 'react';
+
 import { useUser } from '@clerk/clerk-expo';
 import { EmailAddressResource } from '@clerk/types';
 

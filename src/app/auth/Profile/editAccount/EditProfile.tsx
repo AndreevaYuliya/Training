@@ -1,4 +1,6 @@
+import React from 'react';
 import { FC, useRef } from 'react';
+
 import {
 	Image,
 	Keyboard,
@@ -9,34 +11,37 @@ import {
 	View,
 } from 'react-native';
 
-import { useUser } from '@clerk/clerk-expo';
-
-import TextButton from '@/src/components/buttons/TextButton';
-
-import BaseBottomSheetModal, {
-	BottomSheetModalMethods,
-} from '@/src/components/BaseBottomSheetModal';
-import BaseTextInput from '@/src/components/BaseTextInput';
-import BaseButton from '@/src/components/buttons/BaseButton';
-import IconButton from '@/src/components/buttons/IconButton';
-import COLORS from '@/src/constants/colors';
+import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 
-import Header from '@/src/components/Header';
-import ConfirmationModal from '@/src/components/modals/ConfirmationModal';
-import EditingModal from '@/src/components/modals/EditingModal';
-import React from 'react';
+import { useUser } from '@clerk/clerk-expo';
+
 import useChangeAvatar from './helpers/changeAvatar';
 import useFieldDelete from './helpers/useFieldDelete';
 import updateProfile from './helpers/editProfile';
 import useProfileFormState from './helpers/useProfileFormState';
 import updateEmail from './helpers/updateEmail';
 
+import Header from '@/src/components/Header';
+import BaseTextInput from '@/src/components/BaseTextInput';
+
+import ConfirmationModal from '@/src/components/modals/ConfirmationModal';
+import BaseBottomSheetModal, {
+	BottomSheetModalMethods,
+} from '@/src/components/BaseBottomSheetModal';
+
+import TextButton from '@/src/components/buttons/TextButton';
+import BaseButton from '@/src/components/buttons/BaseButton';
+import IconButton from '@/src/components/buttons/IconButton';
+
+import EditingModal from '@/src/components/modals/EditingModal';
+
+import COLORS from '@/src/constants/colors';
+
 const EditAccount: FC = () => {
 	const profileForm = useProfileFormState();
 
 	const {
-		image,
 		name,
 		setName,
 		username,
@@ -337,7 +342,7 @@ const EditAccount: FC = () => {
 				title="Change password"
 				buttonStyles={{ padding: 15 }}
 				onPress={() => {
-					null;
+					router.push('/common/ResetPasswordForm');
 				}}
 			/>
 

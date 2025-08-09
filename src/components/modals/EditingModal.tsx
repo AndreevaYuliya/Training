@@ -1,9 +1,12 @@
 // EditFieldModal.tsx
 import React, { FC } from 'react';
+
 import { Modal, StyleSheet, Text, View } from 'react-native';
-import COLORS from '../../constants/colors';
+
 import BaseTextInput from '../BaseTextInput';
 import BaseButton from '../buttons/BaseButton';
+
+import COLORS from '../../constants/colors';
 
 type Props = {
 	visible: boolean;
@@ -17,6 +20,7 @@ type Props = {
 
 const EditingModal: FC<Props> = (props) => {
 	const { visible, label, placeholder, value, onChange, onCancel, onSave } = props;
+
 	return (
 		<Modal
 			visible={visible}
