@@ -21,7 +21,7 @@ const useFieldDelete = (profileForm: ProfileFormState) => {
 
 	const confirmFieldDelete = async () => {
 		if (!user || !fieldToDelete) {
-			return;
+			return null;
 		}
 
 		try {

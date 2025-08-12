@@ -33,12 +33,14 @@ const changeAvatar = () => {
 		} catch (error) {
 			console.error('Image picker error:', error);
 			Alert.alert('Error', 'Something went wrong while selecting image');
+
+			return null;
 		}
 	};
 
 	const uploadToClerk = async (uri: string) => {
 		if (!isLoaded || !user) {
-			return;
+			return null;
 		}
 
 		try {
@@ -72,6 +74,8 @@ const changeAvatar = () => {
 		} catch (error) {
 			console.error('Upload failed', error);
 			Alert.alert('Error', 'Failed to upload image');
+
+			return null;
 		}
 	};
 	return { handleChangeAvatar };

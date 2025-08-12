@@ -23,30 +23,11 @@ const RootLayout = () => {
 	const insets = useSafeAreaInsets();
 
 	if (!tokenCache) {
-		return (
-			<Text
-				style={{
-					fontSize: 48,
-					alignItems: 'center',
-					justifyContent: 'center',
-					color: COLORS.white,
-				}}
-			>
-				Loading
-			</Text>
-		);
+		return <Text style={styles.loader}>Loading</Text>;
 	}
 
 	return (
-		<GestureHandlerRootView
-			style={[
-				styles.container,
-				{
-					paddingTop: Platform.OS === 'ios' ? insets.top : 32,
-					paddingBottom: Platform.OS === 'ios' ? insets.top : 32,
-				},
-			]}
-		>
+		<GestureHandlerRootView style={styles.container}>
 			<ClerkProvider
 				publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY}
 				tokenCache={tokenCache}
@@ -65,6 +46,13 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: COLORS.background,
+	},
+
+	loader: {
+		fontSize: 48,
+		alignItems: 'center',
+		justifyContent: 'center',
+		color: COLORS.white,
 	},
 });
 

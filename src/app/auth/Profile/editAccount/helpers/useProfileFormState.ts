@@ -50,6 +50,8 @@ const useProfileFormState = (): ProfileFormState => {
 	const [pendingVerification, setPendingVerification] = useState(false);
 	const [error, setError] = useState('');
 
+	console.log('1111', error);
+
 	const [editingField, setEditingField] = useState<
 		'avatar' | 'name' | 'username' | 'phone' | 'account' | null
 	>(null);

@@ -23,7 +23,9 @@ import BaseButton from '@/src/components/buttons/BaseButton';
 
 import BaseBottomSheetModal, {
 	BottomSheetModalMethods,
-} from '@/src/components/BaseBottomSheetModal';
+} from '@/src/components/bottomSheetModals/EmailVerificationBottomSheetModal';
+
+import COLORS from '@/src/constants/colors';
 
 const Form: FC = () => {
 	const { isLoaded, signUp, setActive } = useSignUp();
@@ -49,7 +51,7 @@ const Form: FC = () => {
 		console.log('handleSignUp triggered');
 
 		if (!isLoaded) {
-			return;
+			return null;
 		}
 
 		try {
@@ -74,17 +76,17 @@ const Form: FC = () => {
 			// Step 3: Show verification UI
 			setPendingVerification(true);
 
-			bottomSheetRef.current?.show('signUp');
-		} catch (err) {
+			bottomSheetRef.current?.show();
+		} catch (err: any) {
 			console.error('Sign-up error:', err);
 
-			setError('Sign-up failed');
+			setError(err?.errors?.[0].longMessage);
 		}
 	};
 
 	const onVerifyPress = async () => {
 		if (!isLoaded) {
-			return;
+			return null;
 		}
 
 		try {
@@ -112,16 +114,18 @@ const Form: FC = () => {
 				// complete further steps.
 				console.error(JSON.stringify(signUpAttempt, null, 2));
 			}
-		} catch (err) {
+		} catch (err: any) {
 			// See https://clerk.com/docs/custom-flows/error-handling
 			// for more info on error handling
 			console.error(JSON.stringify(err, null, 2));
+
+			setError(err.errors[0].longMessage);
 		}
 	};
 
 	return (
 		<BottomSheetModalProvider>
-			<View style={{ flex: 1 }}>
+			<View style={styles.flex}>
 				<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
 					<ScrollView
 						showsVerticalScrollIndicator={false}
@@ -129,25 +133,11 @@ const Form: FC = () => {
 						contentContainerStyle={styles.contentContainerStyle}
 					>
 						<View>
-							<Header
-								title="Sign Up"
-								headerStyles={styles.header}
-							/>
-
 							<BaseTextInput
 								label={['Email', '*']}
 								value={email}
 								placeholder="Enter your email"
-								labelStyles={[
-									{},
-									{
-										position: 'absolute',
-										top: -5,
-										left: 55,
-										color: 'red',
-										fontSize: 32,
-									},
-								]}
+								labelStyles={[{}, styles.secondLabel]}
 								onChangeText={(prevEmail) => setEmail(prevEmail.toLowerCase())}
 							/>
 
@@ -177,16 +167,7 @@ const Form: FC = () => {
 								value={password}
 								placeholder="Enter your password"
 								isSecure
-								labelStyles={[
-									{},
-									{
-										position: 'absolute',
-										top: -5,
-										left: 95,
-										color: 'red',
-										fontSize: 32,
-									},
-								]}
+								labelStyles={[{}, styles.secondLabel]}
 								onChangeText={(prevPassword) => setPassword(prevPassword)}
 							/>
 
@@ -195,44 +176,27 @@ const Form: FC = () => {
 								value={confirmedPassword}
 								placeholder="Confirm your password"
 								isSecure
-								labelStyles={[
-									{},
-									{
-										position: 'absolute',
-										top: -5,
-										left: 170,
-										color: 'red',
-										fontSize: 32,
-									},
-								]}
+								labelStyles={[{}, styles.secondLabel]}
 								onChangeText={(prevConfirmedPassword) =>
 									setConfirmedPassword(prevConfirmedPassword)
 								}
 							/>
 						</View>
 
+						{error && <Text style={styles.textError}>{error}</Text>}
+
 						<BaseButton
 							disabled={isDisabled}
 							title="Sign Up"
 							onPress={handleSignUp}
-							containerStyles={{ marginTop: 24 }}
 						/>
-
-						{error && <Text>{error}</Text>}
 					</ScrollView>
 				</TouchableWithoutFeedback>
 
 				<BaseBottomSheetModal
 					ref={bottomSheetRef}
 					setVerificationCode={setVerificationCode}
-					emailToVerify={null} // или актуальный EmailAddressResource, если есть
-					onSuccess={() => {
-						// логика после успешной верификации
-						bottomSheetRef.current?.close();
-
-						setVerificationCode('');
-						setPendingVerification(false);
-					}}
+					err={error}
 					onPress={onVerifyPress}
 				/>
 			</View>
@@ -241,10 +205,14 @@ const Form: FC = () => {
 };
 
 const styles = StyleSheet.create({
+	flex: {
+		flex: 1,
+	},
+
 	container: {
 		flex: 1,
 		marginTop: 24,
-		marginHorizontal: 32,
+		paddingHorizontal: 16,
 	},
 
 	contentContainerStyle: {
@@ -252,8 +220,20 @@ const styles = StyleSheet.create({
 		justifyContent: 'space-between',
 	},
 
-	header: {
-		textAlign: 'center',
+	secondLabel: {
+		color: 'red',
+		transform: [{ scale: 1.4 }],
+	},
+
+	inpuptError: {
+		borderWidth: 1,
+		borderColor: COLORS.red,
+	},
+
+	textError: {
+		color: COLORS.red,
+		fontSize: 16,
+		marginBottom: 15,
 	},
 });
 

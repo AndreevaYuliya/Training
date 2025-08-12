@@ -1,19 +1,28 @@
-import React, { FC, useEffect, useState } from 'react';
+import React, { forwardRef, useImperativeHandle, useRef, useState, useEffect } from 'react';
 
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 
-import { useAuth, useSignIn } from '@clerk/clerk-expo';
+import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
 
-import Header from '@/src/components/Header';
-import BaseTextInput from '@/src/components/BaseTextInput';
-import BaseButton from '@/src/components/buttons/BaseButton';
+import { useSignIn } from '@clerk/clerk-expo';
+
+import BaseTextInput from '../BaseTextInput';
+import BaseButton from '../buttons/BaseButton';
 
 import COLORS from '@/src/constants/colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const ForgotPasswordPage: FC = () => {
+export type BottomSheetModalMethods = {
+	show: () => void;
+	close: () => void;
+};
+
+const ResetPasswordBottomSheetModal = forwardRef<BottomSheetModalMethods>((_, ref) => {
+	const insets = useSafeAreaInsets();
+
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [code, setCode] = useState('');
@@ -22,18 +31,33 @@ const ForgotPasswordPage: FC = () => {
 	const [secondFactor, setSecondFactor] = useState(false);
 	const [error, setError] = useState('');
 
-	const { isSignedIn } = useAuth();
 	const { isLoaded, signIn, setActive } = useSignIn();
 
-	useEffect(() => {
-		if (isSignedIn) {
-			router.push('/auth/Profile');
-		}
-	}, [isSignedIn, router]);
+	const bottomSheetRef = useRef<BottomSheet>(null);
+
+	const resetForm = () => {
+		setEmail('');
+		setPassword('');
+		setCode('');
+		setError('');
+		setSuccessfulCreation(false);
+		setSecondFactor(false);
+	};
 
 	if (!isLoaded) {
 		return null;
 	}
+
+	useImperativeHandle(ref, () => ({
+		show: () => {
+			resetForm();
+
+			bottomSheetRef.current?.expand();
+		},
+		close: () => {
+			bottomSheetRef.current?.close();
+		},
+	}));
 
 	// Send the password reset code to the user's email
 	const create = async () => {
@@ -62,7 +86,7 @@ const ForgotPasswordPage: FC = () => {
 				code,
 				password,
 			})
-			.then((result) => {
+			.then(async (result) => {
 				// Check if 2FA is required
 				if (result.status === 'needs_second_factor') {
 					setSecondFactor(true);
@@ -74,7 +98,16 @@ const ForgotPasswordPage: FC = () => {
 					setError('');
 
 					// ✅ Redirect to Profile or any success screen
-					router.replace('/auth/Profile'); // or any route
+
+					await SecureStore.setItemAsync(
+						'credentials',
+						JSON.stringify({
+							email,
+							password,
+						}),
+					);
+
+					bottomSheetRef.current?.close();
 				} else {
 					console.log(result);
 				}
@@ -86,30 +119,46 @@ const ForgotPasswordPage: FC = () => {
 	};
 
 	return (
-		<View style={styles.container}>
-			<Header
-				backButton
-				title="Reset Password"
-				headerStyles={styles.header}
-			/>
-
-			<View style={styles.formContainer}>
+		<BottomSheet
+			ref={bottomSheetRef}
+			index={-1}
+			backdropComponent={(props) => (
+				<BottomSheetBackdrop
+					{...props}
+					disappearsOnIndex={-1}
+					appearsOnIndex={0}
+					pressBehavior="close"
+				/>
+			)}
+			backgroundStyle={styles.backgroundColor}
+		>
+			<BottomSheetView
+				style={[
+					styles.container,
+					{
+						paddingBottom: Platform.OS === 'ios' ? insets.bottom : 15,
+					},
+				]}
+			>
 				{!successfulCreation && (
 					<View>
 						<BaseTextInput
 							label="Provide your email address"
 							placeholder="email"
 							value={email}
+							labelStyles={error && styles.textError}
+							inputStyles={error && styles.inpuptError}
 							onChangeText={(prevEmail) => setEmail(prevEmail.toLowerCase())}
 						/>
+
+						{error && <Text style={styles.textError}>{error}</Text>}
 
 						<BaseButton
 							disabled={!email}
 							title="Send password reset code"
+							containerStyles={styles.marginTop}
 							onPress={create}
 						/>
-
-						{error && <Text style={styles.textError}>{error}</Text>}
 					</View>
 				)}
 
@@ -124,6 +173,8 @@ const ForgotPasswordPage: FC = () => {
 							onChangeText={setCode}
 						/>
 
+						{error && <Text style={styles.textError}>{error}</Text>}
+
 						<BaseTextInput
 							label="Enter your new password"
 							placeholder="password"
@@ -135,38 +186,43 @@ const ForgotPasswordPage: FC = () => {
 						<BaseButton
 							disabled={!code || !password}
 							title="Reset"
+							containerStyles={styles.marginTop}
 							onPress={reset}
 						/>
-
-						{error && <Text style={styles.textError}>{error}</Text>}
 					</View>
 				)}
 
 				{secondFactor && <Text>2FA is required, but this UI does not handle that</Text>}
-			</View>
-		</View>
+			</BottomSheetView>
+		</BottomSheet>
 	);
-};
+});
+
+export default ResetPasswordBottomSheetModal;
 
 const styles = StyleSheet.create({
-	container: {
-		flex: 1,
+	backgroundColor: {
 		backgroundColor: COLORS.background,
 	},
-	formContainer: {
-		marginTop: 24,
-		marginHorizontal: 32,
+
+	marginTop: {
+		marginTop: 100,
 	},
-	header: {
-		textAlign: 'center',
+
+	container: {
+		padding: 32,
+		justifyContent: 'center',
+		paddingBottom: Platform.OS === 'android' ? 32 : undefined,
 	},
+
 	inpuptError: {
 		borderWidth: 1,
 		borderColor: COLORS.red,
 	},
+
 	textError: {
 		color: COLORS.red,
+		fontSize: 16,
+		marginBottom: 15,
 	},
 });
-
-export default ForgotPasswordPage;

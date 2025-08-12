@@ -37,7 +37,6 @@ const Header: FC<Props> = (props) => {
 const styles = StyleSheet.create({
 	container: {
 		flexDirection: 'row',
-		paddingHorizontal: 16,
 		gap: 16,
 		alignItems: 'center',
 	},

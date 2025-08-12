@@ -60,8 +60,8 @@ const IconButton: FC<Props> = (props) => {
 			case 'cross':
 				return (
 					<CrossIcon
-						width={32}
-						height={32}
+						width={24}
+						height={24}
 						color={COLORS.white}
 					/>
 				);
@@ -130,7 +130,7 @@ const IconButton: FC<Props> = (props) => {
 					<MaterialIcons
 						name="edit"
 						color={COLORS.white}
-						size={24}
+						size={18}
 					/>
 				);
 			default:

@@ -18,9 +18,10 @@ import BaseTextInput from '@/src/components/BaseTextInput';
 import BaseButton from '@/src/components/buttons/BaseButton';
 import IconButton from '@/src/components/buttons/IconButton';
 import TextButton from '@/src/components/buttons/TextButton';
-import { BottomSheetModalMethods } from '@/src/components/BaseBottomSheetModal';
+import { BottomSheetModalMethods } from '@/src/components/bottomSheetModals/ResetPasswordBottomSheetModal';
 
 import COLORS from '@/src/constants/colors';
+import ResetPasswordBottomSheetModal from '@/src/components/bottomSheetModals/ResetPasswordBottomSheetModal';
 
 const Form: FC = () => {
 	const { signIn, setActive, isLoaded } = useSignIn();
@@ -34,6 +35,8 @@ const Form: FC = () => {
 	const [password, setPassword] = useState('');
 	const [authLoading, setAuthLoading] = useState(false);
 	const [canUseBiometrics, setCanUseBiometrics] = useState(false);
+
+	const [error, setError] = useState<string | null>(null);
 
 	const bottomSheetRef = useRef<BottomSheetModalMethods>(null);
 
@@ -54,14 +57,13 @@ const Form: FC = () => {
 	// Handle the submission of the sign-in form
 	const handleSignIn = async (useLocal: boolean) => {
 		if (!isLoaded) {
-			return;
+			return null;
 		}
 
 		if (isSignedIn) {
 			console.log('User already signed in');
 
 			router.replace('/');
-			return;
 		}
 
 		// Start the sign-in process using the email and password provided
@@ -101,12 +103,17 @@ const Form: FC = () => {
 			} else {
 				// If the status is not complete, check why.
 				// User may need to complete further steps.
+
 				console.error(JSON.stringify(signInAttempt, null, 2));
 			}
-		} catch (err) {
+		} catch (err: any) {
 			// For info on error handing,
 			// see https://clerk.com/docs/custom-flows/error-handling
 			console.error(JSON.stringify(err, null, 2));
+
+			setError(err?.errors?.[0]?.longMessage);
+
+			setError(err?.errors?.[0].message);
 		}
 	};
 
@@ -117,24 +124,27 @@ const Form: FC = () => {
 		const result = await LocalAuthentication.authenticateAsync({
 			promptMessage: 'Login with biometrics',
 		});
+		console.log('result', result.success);
 
 		if (!result.success) {
 			Alert.alert('Biometric authentication failed');
-			return;
+			return null;
 		}
 
 		const storedCreds = await SecureStore.getItemAsync('credentials');
 		if (!storedCreds) {
 			Alert.alert('No saved credentials found');
-			return;
+			return null;
 		}
 		const { email, password } = JSON.parse(storedCreds);
 		try {
 			if (!signIn) {
-				return;
+				return null;
 			}
 
 			const signInAttempt = await signIn.create({ identifier: email, password });
+
+			console.log('signInAttempt', signInAttempt);
 
 			if (signInAttempt.status === 'complete') {
 				await setActive({ session: signInAttempt.createdSessionId });
@@ -142,9 +152,14 @@ const Form: FC = () => {
 				router.replace('/');
 			} else {
 				Alert.alert('Additional verification required.');
+
+				return null;
 			}
 		} catch (err) {
+			console.error(JSON.stringify(err));
 			Alert.alert('Login failed');
+
+			return null;
 		}
 	};
 
@@ -186,16 +201,17 @@ const Form: FC = () => {
 	const isDisabled = !email || !password;
 
 	return (
-		<BottomSheetModalProvider>
+		<>
 			<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
 				<View style={styles.container}>
-					<View style={{ flex: 2, justifyContent: 'space-between' }}>
-						{/* <Header title="Sign In" headerStyles={styles.header} /> */}
+					<View style={styles.formContainer}>
 						<View>
 							<BaseTextInput
 								label="Email"
 								value={email}
 								placeholder="Enter your email"
+								labelStyles={error && styles.textError}
+								inputStyles={error && styles.inpuptError}
 								onChangeText={(prevEmail) => setEmail(prevEmail.toLowerCase())}
 							/>
 
@@ -204,18 +220,20 @@ const Form: FC = () => {
 								value={password}
 								placeholder="Enter your password"
 								isSecure
+								labelStyles={error && styles.textError}
+								inputStyles={error && styles.inpuptError}
 								onChangeText={(prevPassword) => setPassword(prevPassword)}
 							/>
 
-							<View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
-								<Text style={{ fontSize: 18, color: COLORS.white }}>
-									Forgot password?
-								</Text>
+							{error && <Text style={styles.textError}>{error}</Text>}
+
+							<View style={styles.resetPasswordContainer}>
+								<Text style={styles.text}>Forgot password?</Text>
 
 								<TextButton
 									title="Reset"
-									titleStyles={{ textDecorationLine: 'underline' }}
-									onPress={() => router.navigate('/common/ResetPasswordForm')}
+									titleStyles={styles.underlineText}
+									onPress={() => bottomSheetRef.current?.show()}
 								/>
 							</View>
 						</View>
@@ -232,150 +250,151 @@ const Form: FC = () => {
 						<BaseButton
 							disabled={isDisabled}
 							title="Sign In"
-							containerStyles={{ marginBottom: 16 }}
 							onPress={() => handleSignIn(false)}
 						/>
 					</View>
 
-					<View
-						style={{
-							flex: 1,
-							justifyContent: 'space-between',
-						}}
-					>
-						<View
-							style={{
-								flexDirection: 'row',
-								justifyContent: 'space-between',
-							}}
-						>
-							<View
-								style={{
-									width: '35%',
-									height: 2,
-									alignItems: 'center',
-									alignSelf: 'center',
-									backgroundColor: COLORS.white,
-								}}
-							/>
+					<View style={styles.bottomContainer}>
+						<View style={styles.row}>
+							<View style={styles.separator} />
 
-							<Text
-								style={{
-									alignItems: 'center',
-									alignSelf: 'center',
-									color: COLORS.white,
-									fontSize: 18,
-									fontWeight: 'bold',
-								}}
-							>
-								OR
-							</Text>
+							<Text style={styles.orText}>OR</Text>
 
-							<View
-								style={{
-									width: '35%',
-									height: 2,
-									alignItems: 'center',
-									alignSelf: 'center',
-									backgroundColor: COLORS.white,
-								}}
-							/>
+							<View style={styles.separator} />
 						</View>
 
-						<View
-							style={{
-								flexDirection: 'row',
-								justifyContent: 'space-between',
-							}}
-						>
+						<View style={styles.row}>
 							<IconButton
 								iconName="google"
-								buttonStyles={{
-									backgroundColor: COLORS.white,
-									opacity: 0.6,
-									height: 60,
-									width: 85,
-									borderRadius: 35,
-									alignItems: 'center',
-									justifyContent: 'center',
-								}}
+								buttonStyles={styles.socialMediaButton}
 								onPress={() => handleProvidersSignIn('oauth_google')}
 							/>
 
 							<IconButton
 								iconName="apple"
-								buttonStyles={{
-									backgroundColor: COLORS.white,
-									opacity: 0.6,
-									height: 60,
-									width: 85,
-									borderRadius: 35,
-									alignItems: 'center',
-									justifyContent: 'center',
-								}}
+								buttonStyles={styles.socialMediaButton}
 								onPress={() => handleProvidersSignIn('oauth_apple')}
 							/>
 
 							<IconButton
 								iconName="github"
-								buttonStyles={{
-									backgroundColor: COLORS.white,
-									opacity: 0.2,
-									height: 60,
-									width: 85,
-									borderRadius: 35,
-									alignItems: 'center',
-									justifyContent: 'center',
-								}}
+								buttonStyles={styles.socialMediaButton}
 								onPress={() => handleProvidersSignIn('oauth_github')}
 							/>
 						</View>
 
-						<View
-							style={{
-								flexDirection: 'row',
-								gap: 8,
-								alignItems: 'center',
-								justifyContent: 'center',
-							}}
-						>
-							<Text style={{ fontSize: 18, color: COLORS.white }}>
-								Don't have an account?
-							</Text>
+						<View style={styles.signUpContainer}>
+							<Text style={styles.text}>Don't have an account?</Text>
 
 							<TextButton
 								title="Sign up"
-								titleStyles={{ textDecorationLine: 'underline' }}
+								titleStyles={styles.underlineText}
 								onPress={() => router.navigate('/unauth/signUp')}
 							/>
 						</View>
 					</View>
 				</View>
 			</TouchableWithoutFeedback>
-		</BottomSheetModalProvider>
+
+			<ResetPasswordBottomSheetModal ref={bottomSheetRef} />
+		</>
 	);
 };
 
 const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		paddingTop: 24,
-		marginHorizontal: 32,
-		justifyContent: 'space-between',
-		gap: 48,
-	},
 	loadingContainer: {
 		flex: 1,
 		justifyContent: 'center',
 		alignItems: 'center',
 		backgroundColor: COLORS.background,
 	},
-	header: {
-		textAlign: 'center',
+
+	row: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		gap: 30,
 	},
-	touchId: {
+
+	container: {
 		flex: 1,
+		paddingHorizontal: 16,
+		justifyContent: 'space-between',
+		gap: 48,
+	},
+
+	formContainer: {
+		flex: 2,
+		marginTop: 25,
+		justifyContent: 'space-between',
+	},
+
+	resetPasswordContainer: {
+		flexDirection: 'row',
+		gap: 8,
+		marginTop: 8,
+	},
+
+	text: {
+		fontSize: 18,
+		color: COLORS.white,
+	},
+
+	underlineText: {
+		textDecorationLine: 'underline',
+	},
+
+	touchId: {
 		justifyContent: 'center',
+	},
+
+	bottomContainer: {
+		flex: 1,
+		marginTop: 16,
+		justifyContent: 'space-between',
+	},
+
+	separator: {
+		width: '35%',
+		height: 2,
+		alignItems: 'center',
+		alignSelf: 'center',
+		backgroundColor: COLORS.white,
+	},
+
+	orText: {
+		alignItems: 'center',
+		alignSelf: 'center',
+		color: COLORS.white,
+		fontSize: 18,
+		fontWeight: 'bold',
+	},
+
+	socialMediaButton: {
+		backgroundColor: COLORS.white,
+		opacity: 0.6,
+		height: 60,
+		width: 85,
+		borderRadius: 35,
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
+
+	signUpContainer: {
+		flexDirection: 'row',
+		gap: 8,
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
+
+	inpuptError: {
+		borderWidth: 1,
+		borderColor: COLORS.red,
+	},
+
+	textError: {
+		color: COLORS.red,
+		fontSize: 16,
+		marginBottom: 15,
 	},
 });
 

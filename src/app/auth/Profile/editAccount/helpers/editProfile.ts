@@ -11,7 +11,7 @@ const editProfile = (profileForm: ProfileFormState) => {
 		const { name, username, phone, editingField, setEditingField } = profileForm;
 
 		if (!user) {
-			return;
+			return null;
 		}
 
 		try {
@@ -38,6 +38,8 @@ const editProfile = (profileForm: ProfileFormState) => {
 				message = error.message;
 			}
 			Alert.alert('Update Failed', message);
+
+			return null;
 		}
 	};
 

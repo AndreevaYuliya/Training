@@ -4,11 +4,11 @@ import { useUser } from '@clerk/clerk-expo';
 
 import updateUserEmail from '@/src/hooks/updateUserEmail';
 
-import { BottomSheetModalMethods } from '@/src/components/BaseBottomSheetModal';
+import { BottomSheetModalMethods } from '@/src/components/bottomSheetModals/EmailVerificationBottomSheetModal';
 
-import useProfileFormState from './useProfileFormState';
+import { ProfileFormState } from './useProfileFormState';
 
-const updateEmail = () => {
+const updateEmail = (params: ProfileFormState) => {
 	const {
 		email,
 		emailToVerify,
@@ -16,7 +16,7 @@ const updateEmail = () => {
 		verificationCode,
 		setPendingVerification,
 		setError,
-	} = useProfileFormState();
+	} = params;
 
 	const { user } = useUser();
 
@@ -24,27 +24,31 @@ const updateEmail = () => {
 
 	const onConfirmEmail = async () => {
 		if (!user) {
-			return;
+			return null;
 		}
 
 		try {
+			console.log('email', email);
 			const newEmailObj = await updateUserEmail(user, email);
 
 			if (newEmailObj) {
 				setEmailToVerify(newEmailObj);
 				setPendingVerification(true);
 
-				bottomSheetRef.current?.show('changeEmail');
+				bottomSheetRef.current?.show();
 			}
 		} catch (err: any) {
 			console.error('Failed to send verification code:', err);
-			setError(err.errors?.[0]?.message || 'Something went wrong');
+			console.log('444', err.errors?.[0]?.longMesssage || err.message);
+			setError(err.errors?.[0]?.longMesssage || err.message);
 		}
 	};
 
 	const handleVerifyEmail = async () => {
+		console.log('verificationCode', verificationCode);
+
 		if (!user || !emailToVerify || !verificationCode) {
-			return;
+			return null;
 		}
 
 		try {
@@ -63,11 +67,11 @@ const updateEmail = () => {
 			bottomSheetRef.current?.close();
 		} catch (err: any) {
 			console.error('Verification error:', err);
-			setError(err.errors?.[0]?.message || 'Invalid code');
+			setError(err.errors?.[0]?.message);
 		}
 	};
 
-	return { onConfirmEmail, handleVerifyEmail };
+	return { bottomSheetRef, onConfirmEmail, handleVerifyEmail };
 };
 
 export default updateEmail;

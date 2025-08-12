@@ -7,7 +7,7 @@ const updateUserEmail = async (
 ): Promise<EmailAddressResource | null> => {
 	try {
 		const currentPrimary = user.primaryEmailAddress?.emailAddress;
-
+		console.log('newEmail', newEmail);
 		if (newEmail && newEmail !== currentPrimary) {
 			console.log('Creating new email address...');
 
@@ -20,7 +20,7 @@ const updateUserEmail = async (
 			return newEmailObj;
 		}
 
-		return null;
+		throw new Error('Email the same');
 	} catch (error) {
 		console.error('Email update error:', error);
 
