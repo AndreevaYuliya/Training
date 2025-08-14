@@ -68,8 +68,9 @@ const IconButton: FC<Props> = (props) => {
 			case 'profile':
 				return (
 					<ProfileIcon
-						width={24}
-						height={24}
+						width={28}
+						height={28}
+						color={COLORS.white}
 					/>
 				);
 			case 'close-eye':

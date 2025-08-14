@@ -9,7 +9,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as AuthSession from 'expo-auth-session';
 import * as LocalAuthentication from 'expo-local-authentication';
 
-import { useAuth, useSignIn, useSSO } from '@clerk/clerk-expo';
+import { SignedOut, useAuth, useSignIn, useSSO } from '@clerk/clerk-expo';
 import { useLocalCredentials } from '@clerk/clerk-expo/local-credentials';
 
 import { useWarmUpBrowser } from '@/src/hooks/useWarmUpBrowser';
@@ -25,7 +25,7 @@ import ResetPasswordBottomSheetModal from '@/src/components/bottomSheetModals/Re
 
 const Form: FC = () => {
 	const { signIn, setActive, isLoaded } = useSignIn();
-	const { isSignedIn } = useAuth();
+	const { isSignedIn, signOut } = useAuth();
 	const { hasCredentials, setCredentials, authenticate, biometricType } = useLocalCredentials();
 
 	useWarmUpBrowser(); // Prevent blank tab delay
@@ -165,6 +165,7 @@ const Form: FC = () => {
 
 	const handleProvidersSignIn = useCallback(
 		async (strategy: 'oauth_google' | 'oauth_apple' | 'oauth_github') => {
+			await signOut();
 			try {
 				// Start the authentication process by calling `startSSOFlow()`
 				const { createdSessionId, setActive, signIn, signUp } = await startSSOFlow({

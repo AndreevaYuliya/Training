@@ -78,8 +78,12 @@
 const COLORS = {
 	white: 'rgba(255, 255, 255, 1)',
 	black: 'rgba(0, 0, 0, 1)',
+	green: 'rgba(102, 187, 106, 1)',
+	yellow: 'rgba(255, 213, 79, 1)',
 	red: 'rgba(239, 83, 80, 1)',
 	transparent: 'rgba(0, 0, 0, 0.7)',
+
+	grey: 'rgba(0, 0, 0, 0.4)',
 
 	background: 'rgba(139, 212, 250, 1)', //FAVOURITE
 

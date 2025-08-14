@@ -21,7 +21,7 @@ const Index = () => {
 	}
 
 	if (isSignedIn) {
-		return <Redirect href="/auth/Profile" />;
+		return <Redirect href="/auth/Workouts" />;
 	} else {
 		return <Redirect href="/unauth/signIn" />;
 	}

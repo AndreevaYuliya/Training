@@ -2,7 +2,7 @@ import React from 'react';
 
 import { Platform, StyleSheet, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Slot } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
@@ -20,24 +20,24 @@ import COLORS from '../constants/colors';
 WebBrowser.maybeCompleteAuthSession();
 
 const RootLayout = () => {
-	const insets = useSafeAreaInsets();
-
 	if (!tokenCache) {
 		return <Text style={styles.loader}>Loading</Text>;
 	}
 
 	return (
 		<GestureHandlerRootView style={styles.container}>
-			<ClerkProvider
-				publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY}
-				tokenCache={tokenCache}
-			>
-				<AuthCredentialsProvider>
-					<BottomSheetModalProvider>
-						<Slot />
-					</BottomSheetModalProvider>
-				</AuthCredentialsProvider>
-			</ClerkProvider>
+			<SafeAreaProvider>
+				<ClerkProvider
+					publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY}
+					tokenCache={tokenCache}
+				>
+					<AuthCredentialsProvider>
+						<BottomSheetModalProvider>
+							<Slot />
+						</BottomSheetModalProvider>
+					</AuthCredentialsProvider>
+				</ClerkProvider>
+			</SafeAreaProvider>
 		</GestureHandlerRootView>
 	);
 };

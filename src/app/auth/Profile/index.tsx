@@ -55,11 +55,11 @@ const Profile: FC = () => {
 
 				<Text style={styles.userInfo}>Email: {user.emailAddresses[0].emailAddress}</Text>
 
-				{user.unsafeMetadata?.phoneNumber ? (
+				{/* {user.unsafeMetadata?.phoneNumber ? (
 					<Text style={styles.userInfo}>
 						Phone number: {String(user.unsafeMetadata.phoneNumber)}
 					</Text>
-				) : null}
+				) : null} */}
 			</View>
 			<BaseButton
 				title="Logout"
